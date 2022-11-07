@@ -7,7 +7,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-func main() {
+func test() {
 	var dig dnsutil.Dig
 	dig.SetDNS("1.1.1.1")
 	msg, err := dig.GetMsg(dns.TypeA, "google.com")
