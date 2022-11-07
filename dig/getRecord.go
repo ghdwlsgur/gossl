@@ -2,22 +2,24 @@ package dig
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/lixiangzhong/dnsutil"
-	"github.com/miekg/dns"
 )
 
-func test() {
+func getRecord(domainName string) {
+	domain := domainName
 	var dig dnsutil.Dig
-	dig.SetDNS("1.1.1.1")
-	msg, err := dig.GetMsg(dns.TypeA, "google.com")
+	rsps, err := dig.Trace(domain)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	fmt.Println(msg.Question)
-	fmt.Println(msg.Answer)
-	fmt.Println(msg.Ns)
-	fmt.Println(msg.Extra)
+	for _, rsp := range rsps {
+		if rsp.Msg.Authoritative {
+			for _, answer := range rsp.Msg.Answer {
+				fmt.Println(strings.Split(answer.String(), " ")[1])
+			}
+		}
+	}
 }
