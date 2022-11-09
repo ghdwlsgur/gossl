@@ -1,13 +1,9 @@
 package main
 
-import (
-	"fmt"
-	"net"
-	"os"
-)
+import "github.com/ghdwlsgur/cert-check/cmd"
 
 func main() {
-	// cmd.Execute("1.0")
+	cmd.Execute("1.0")
 
 	// domain := "sangdo-vod02.fastedge.net"
 	// var dig dnsutil.Dig
@@ -26,12 +22,12 @@ func main() {
 	// 	}
 	// }
 
-	ips, err := net.LookupIP("vod.ghu.ac.kr")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get IPs: %v\n", err)
-		os.Exit(1)
-	}
-	for _, ip := range ips {
-		fmt.Printf("%s\n", ip.String())
-	}
+	// ips, err := net.LookupIP("vod.ghu.ac.kr")
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Could not get IPs: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// for _, ip := range ips {
+	// 	fmt.Printf("%s\n", ip.String())
+	// }
 }
