@@ -1,18 +1,15 @@
 package internal
 
-import (
-	"fmt"
-	"net"
-	"os"
-)
+import "net"
 
-func GetRecord(domainName string) {
-	ips, err := net.LookupIP("vod.ghu.ac.kr")
+func GetRecord(domainName string) ([]net.IP, error) {
+	// ips, err := net.LookupIP("vod.ghu.ac.kr")
+	ips, err := net.LookupIP(domainName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get IPs: %v\n", err)
-		os.Exit(1)
+		return nil, err
 	}
-	for _, ip := range ips {
-		fmt.Printf("%s\n", ip.String())
-	}
+	// for _, ip := range ips {
+	// 	fmt.Printf("%s\n", ip.String())
+	// }
+	return ips, nil
 }
