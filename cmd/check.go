@@ -1,16 +1,14 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/ghdwlsgur/cert-check/internal"
 	"github.com/spf13/cobra"
 )
 
 var (
-	domain *internal.Domain
-	err    error
-	// response *internal.Response
+	domain    *internal.Domain
+	reqDomain *internal.ReqDomain
+	err       error
 )
 
 var (
@@ -19,23 +17,27 @@ var (
 		Short: "test",
 		Long:  "test",
 		Run: func(_ *cobra.Command, _ []string) {
-			// ctx := context.Background()
 
 			domain, err = internal.AskDomain()
 			if err != nil {
 				panicRed(err)
 			}
 
-			fmt.Println(domain)
+			reqDomain, err = internal.AskReqDomain()
+			if err != nil {
+				panicRed(err)
+			}
 
 			ips, err := internal.GetRecord(domain.Name)
 			if err != nil {
 				panicRed(err)
 			}
-			fmt.Println(ips)
 
 			for {
-				internal.Validate(ips, domain.Name)
+				_, err = internal.Validate(ips, domain.Name, reqDomain.Name)
+				if err != nil {
+					panicRed(err)
+				}
 			}
 
 		},
