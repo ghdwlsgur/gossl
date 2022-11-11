@@ -2,6 +2,7 @@ package internal
 
 import (
 	"crypto/tls"
+	"crypto/x509/pkix"
 	"fmt"
 	"net"
 	"net/http"
@@ -9,29 +10,65 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/fatih/color"
 )
 
-// var (
-// 	_response *Response
-// )
+type Response struct {
+	subjectCommonName string
+	certIssuerName    pkix.Name
+	certCommonName    string
+	certStartDate     string
+	certExpireDate    string
+	respStatus        string
+	respDate          string
+	respServer        string
+	respContentType   string
+	respConnection    string
+}
 
-// type (
-// 	Response struct {
-// 		certIssuerName pkix.Name
-// 		certCommonName string
-// 		certStartDate   string
-// 		certExpireDate string
-// 		respStatus      string
-// 		respDate        string
-// 		respServer      string
-// 		respContentType string
-// 		respConnection  string
-// 	}
-// )
+func (r Response) getSubjectCommonName() string {
+	return r.subjectCommonName
+}
 
-// (*Response, error)
-func Validate(ips []net.IP, domainName string) {
+func (r Response) getCertIssuerName() pkix.Name {
+	return r.certIssuerName
+}
 
+func (r Response) getCertCommonName() string {
+	return r.certCommonName
+}
+
+func (r Response) getCertStartDate() string {
+	return r.certStartDate
+}
+
+func (r Response) getCertExpireDate() string {
+	return r.certExpireDate
+}
+
+func (r Response) getRespStatus() string {
+	return r.respStatus
+}
+
+func (r Response) getRespDate() string {
+	return r.respDate
+}
+
+func (r Response) getRespServer() string {
+	return r.respServer
+}
+
+func (r Response) getRespContentType() string {
+	return r.respContentType
+}
+
+func (r Response) getRespConnection() string {
+	return r.respConnection
+}
+
+func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response, error) {
+
+	res := &Response{}
 	var ipList []string
 	ipList = make([]string, 0, len(ips))
 	for _, ip := range ips {
@@ -47,8 +84,7 @@ func Validate(ips []net.IP, domainName string) {
 	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
 		icons.SelectFocus.Format = "green+hb"
 	}), survey.WithPageSize(len(ipList))); err != nil {
-		// return nil, err
-		fmt.Println(err)
+		return nil, err
 	}
 
 	ref := fmt.Sprintf("https://%s:443@%s:443", domainName, answer)
@@ -57,8 +93,7 @@ func Validate(ips []net.IP, domainName string) {
 	// url_proxy, err := url_i.Parse("https://sangdo-vod02.fastedge.net:443@61.110.198.20:443")
 	url_proxy, err := url_i.Parse(ref)
 	if err != nil {
-		// return nil, err
-		fmt.Println(err)
+		return nil, err
 	}
 
 	// 5초 이내로 타임아웃 설정
@@ -79,76 +114,65 @@ func Validate(ips []net.IP, domainName string) {
 	// conn, err := tls.Dial("tcp", "sangdo-vod02.fastedge.net:443", transport.TLSClientConfig)
 	conn, err := tls.Dial("tcp", dialAddr, transport.TLSClientConfig)
 	if err != nil {
-		fmt.Println("check")
-		// return nil, err
-		fmt.Println(err)
+		return nil, err
 	}
 	defer conn.Close()
 
 	certs := conn.ConnectionState().PeerCertificates
+
 	for _, cert := range certs {
 		if len(cert.DNSNames) > 0 {
-			// _response.certIssuerName = cert.Issuer
-			// return &Response{
-			// 	certIssuerName: cert.Issuer,
-			// 	certCommonName: cert.Issuer.CommonName,
-			// 	certExpireDate: cert.NotBefore.Format("2006-January-02"),
-			// }, nil
-			// _response.certCommonName = cert.Issuer.CommonName
-			// _response.certStartDate = cert.NotBefore.Format("2006-January-02")
-			// _response.certExpireDate = cert.NotAfter.Format("2006-January-02")
 
-			fmt.Printf("Issuer Name:\t%s\n", cert.Issuer)
-			fmt.Printf("Common Name:\t%s\n", cert.Issuer.CommonName)
-			fmt.Printf("Start Date:\t%s\n", cert.NotBefore.Format("2006-January-02"))
-			fmt.Printf("Expire Date:\t%s\n", cert.NotAfter.Format("2006-January-02"))
-			// &Response.certIssuerName = cert.Issuer
+			fmt.Println(cert.VerifyHostname(""))
+			// fmt.Println(cert.Issuer.Country)
+			res.subjectCommonName = cert.Subject.CommonName
+			res.certIssuerName = cert.Issuer
+			res.certCommonName = cert.Issuer.CommonName
+			res.certStartDate = cert.NotBefore.Format("2006-January-02")
+			res.certExpireDate = cert.NotAfter.Format("2006-January-02")
 
-			// Response.certIssuerName = cert.Issuer
-			// &Response{
-			// 	certIssuerName: cert.Issuer,
-			// }
+			fmt.Printf("matched cert's \"%s\"\n", color.HiGreenString(res.getSubjectCommonName()))
+			fmt.Printf("Issuer Name:\t%s\n", res.getCertIssuerName())
+			fmt.Printf("Common Name:\t%s\n", res.getCertCommonName())
+			fmt.Printf("Start Date:\t%s\n", res.getCertStartDate())
+			fmt.Printf("Expire Date:\t%s\n", color.HiGreenString(res.getCertExpireDate()))
 
-			// &Response{
-			// 	certIssuerName: cert.Issuer,
-			// 	certCommonName: cert.Issuer.CommonName,
-			// 	certStartDate:  cert.NotBefore.Format("2006-January-02"),
-			// 	certExpireDate: cert.NotAfter.Format("2006-January-02"),
-			// }
 		}
 	}
-	// return &Response{}
 
 	client := &http.Client{
 		Transport: &transport,
 	}
 
-	url := fmt.Sprintf("http://%s", domainName)
+	url := fmt.Sprintf("http://%s", reqDomainName)
 	// resp, err := client.Get("http://sangdo-vod02.fastedge.net")
 	resp, err := client.Get(url)
 	if err != nil {
-		// return nil, err
-		fmt.Println(err)
+		return nil, err
 	}
 
-	// _response.respStatus = resp.Status
-	// _response.respDate = resp.Header.Values("Date")[0]
-	// _response.respServer = resp.Header.Values("Server")[0]
-	// _response.respContentType = resp.Header.Values("Content-Type")[0]
-	// _response.respConnection = resp.Header.Values("Connection")[0]
+	res.respStatus = resp.Status
+	res.respDate = resp.Header.Values("Date")[0]
+	res.respServer = resp.Header.Values("Server")[0]
+	res.respContentType = resp.Header.Values("Content-Type")[0]
+	res.respConnection = resp.Header.Values("Connection")[0]
 
-	fmt.Printf("%s\t\t%s\n", "Status:", resp.Status)
-	fmt.Printf("%s\t\t%s\n", "Date:", resp.Header.Values("Date")[0])
-	fmt.Printf("%s\t\t%s\n", "Server:", resp.Header.Values("Server")[0])
-	fmt.Printf("%s\t%s\n", "Content-Type", resp.Header.Values("Content-Type")[0])
-	fmt.Printf("%s\t%s\n", "Connection", resp.Header.Values("Connection")[0])
+	fmt.Printf("%s\t\t%s\n", "Status:", res.getRespStatus())
+	fmt.Printf("%s\t\t%s\n", "Date:", res.getRespDate())
+	fmt.Printf("%s\t\t%s\n", "Server:", color.HiGreenString(res.getRespServer()))
+	fmt.Printf("%s\t%s\n", "Content-Type", res.getRespContentType())
+	fmt.Printf("%s\t%s\n", "Connection", res.getRespConnection())
 
-	// return _response, nil
-	// // return &Response{
-	// // 	respStatus: resp.Status,
-	// // 	respDate: resp.Header.Values("Date")[0],
-	// // 	respServer: resp.Header.Values("Server")[0],
-	// // 	respContentType: resp.Header.Values("Content-Type")[0],
-	// // 	resConnection: resp.Header.Values("Connection")[0],
-	// // }, nil
+	return &Response{
+		certIssuerName:  res.certIssuerName,
+		certCommonName:  res.certCommonName,
+		certStartDate:   res.certStartDate,
+		certExpireDate:  res.certExpireDate,
+		respStatus:      res.respStatus,
+		respDate:        res.respDate,
+		respServer:      res.respServer,
+		respContentType: res.respContentType,
+		respConnection:  res.respConnection,
+	}, nil
+
 }
