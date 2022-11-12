@@ -130,6 +130,7 @@ func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response,
 			res.certCommonName = cert.Issuer.CommonName
 			res.certStartDate = cert.NotBefore.Format("2006-January-02")
 			res.certExpireDate = cert.NotAfter.Format("2006-January-02")
+			fmt.Println(cert.Subject)
 
 			fmt.Printf("matched cert's \"%s\"\n", color.HiGreenString(res.getSubjectCommonName()))
 			fmt.Printf("Issuer Name:\t%s\n", res.getCertIssuerName())

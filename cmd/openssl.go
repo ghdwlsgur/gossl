@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"crypto/x509"
 	"fmt"
-	"os"
 
 	"github.com/ghdwlsgur/cert-check/internal"
 	"github.com/spf13/cobra"
@@ -11,6 +9,8 @@ import (
 
 var (
 	certFile *internal.CertFile
+	p        *internal.Pem
+	m        *internal.Md5
 )
 
 var (
@@ -30,19 +30,28 @@ var (
 				panicRed(err)
 			}
 
-			fmt.Println(fileName)
-
-			// regex := regexp.MustCompile("(\n)?-----(.)*-----\n")
-			data, _ := os.ReadFile(fileName)
-			// parts := regex.ReplaceAllString(string(data), "")
-			fmt.Println(string(data))
-
-			s, err := x509.ParseCertificate(data)
+			p, err = internal.GetPemType(fileName)
 			if err != nil {
 				panicRed(err)
 			}
 
-			fmt.Println(s)
+			if p.Type == "RSA PRIVATE KEY" {
+
+				m, err = internal.GetMd5FromRsaPrivateKey(p, "speedy0620#@1")
+				if err != nil {
+					panicRed(err)
+				}
+				fmt.Println(m.RsaPrivateKey)
+
+			} else if p.Type == "CERTIFICATE" {
+
+				m, err = internal.GetMd5FromCertificate(p)
+				if err != nil {
+					panicRed(err)
+				}
+				fmt.Println(m.Certificate)
+
+			}
 
 		},
 	}
