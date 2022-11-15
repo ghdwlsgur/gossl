@@ -6,9 +6,7 @@ import (
 )
 
 var (
-	domain    *internal.Domain
-	reqDomain *internal.ReqDomain
-	err       error
+	err error
 )
 
 var (
@@ -18,23 +16,23 @@ var (
 		Long:  "test",
 		Run: func(_ *cobra.Command, _ []string) {
 
-			domain, err = internal.AskDomain()
+			domain, err := internal.AskInput("What is your domain ?", 1)
 			if err != nil {
 				panicRed(err)
 			}
 
-			reqDomain, err = internal.AskReqDomain()
+			targetDomain, err := internal.AskInput("What is your target domain ?", 1)
 			if err != nil {
 				panicRed(err)
 			}
 
-			ips, err := internal.GetRecord(domain.Name)
+			ips, err := internal.GetRecord(domain)
 			if err != nil {
 				panicRed(err)
 			}
 
 			for {
-				_, err = internal.Validate(ips, domain.Name, reqDomain.Name)
+				_, err = internal.Validate(ips, domain, targetDomain)
 				if err != nil {
 					panicRed(err)
 				}
