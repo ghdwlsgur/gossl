@@ -14,6 +14,7 @@ import (
 )
 
 type Response struct {
+	subject           pkix.Name
 	subjectCommonName string
 	certIssuerName    pkix.Name
 	certCommonName    string
@@ -26,8 +27,8 @@ type Response struct {
 	respConnection    string
 }
 
-func (r Response) getSubjectCommonName() string {
-	return r.subjectCommonName
+func (r Response) getSubject() pkix.Name {
+	return r.subject
 }
 
 func (r Response) getCertIssuerName() pkix.Name {
@@ -123,16 +124,15 @@ func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response,
 	for _, cert := range certs {
 		if len(cert.DNSNames) > 0 {
 
-			fmt.Println(cert.VerifyHostname(""))
-			// fmt.Println(cert.Issuer.Country)
+			res.subject = cert.Subject
 			res.subjectCommonName = cert.Subject.CommonName
 			res.certIssuerName = cert.Issuer
 			res.certCommonName = cert.Issuer.CommonName
 			res.certStartDate = cert.NotBefore.Format("2006-January-02")
 			res.certExpireDate = cert.NotAfter.Format("2006-January-02")
-			fmt.Println(cert.Subject)
 
-			fmt.Printf("matched cert's \"%s\"\n", color.HiGreenString(res.getSubjectCommonName()))
+			// fmt.Println(cert.VerifyHostname(""))
+			fmt.Printf("Subject:\t%s\n", res.getSubject())
 			fmt.Printf("Issuer Name:\t%s\n", res.getCertIssuerName())
 			fmt.Printf("Common Name:\t%s\n", res.getCertCommonName())
 			fmt.Printf("Start Date:\t%s\n", res.getCertStartDate())
