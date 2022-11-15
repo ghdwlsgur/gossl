@@ -85,19 +85,37 @@ func GetMd5FromCertificate(p *Pem) (*Md5, error) {
 	}, nil
 }
 
-func GetMd5FromRsaPrivateKey(p *Pem, password string) (*Md5, error) {
+func GetMd5FromRsaPrivateKey(p *Pem) (*Md5, error) {
 
 	m := &Md5{}
 	block := p.getBlock()
 	enc := x509.IsEncryptedPEMBlock(block)
 
 	if enc {
+		password, err := AskInput("What is your password", 1)
+		if err != nil {
+			return nil, err
+		}
+
 		b, err := x509.DecryptPEMBlock(block, []byte(password))
 		if err != nil {
 			return nil, err
 		}
 
 		priv, err := x509.ParsePKCS1PrivateKey(b)
+		if err != nil {
+			return nil, err
+		}
+
+		modulus := strings.ToUpper(hex.EncodeToString(priv.N.Bytes()))
+		mdl := fmt.Sprintf("Modulus=%s", modulus)
+
+		hash := md5.New()
+		hash.Write([]byte(mdl))
+		m.RsaPrivateKey = hex.EncodeToString(hash.Sum(nil))
+	} else {
+
+		priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 		if err != nil {
 			return nil, err
 		}

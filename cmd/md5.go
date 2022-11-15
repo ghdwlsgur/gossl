@@ -25,7 +25,7 @@ var (
 				panicRed(err)
 			}
 
-			fileName, err := internal.AskCertFile(certFile.Name)
+			fileName, err := internal.AskSelect("Choose pem file", certFile.Name, len(certFile.Name))
 			if err != nil {
 				panicRed(err)
 			}

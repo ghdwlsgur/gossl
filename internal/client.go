@@ -1,62 +1,76 @@
 package internal
 
-import "github.com/AlecAivazis/survey/v2"
+import (
+	"github.com/AlecAivazis/survey/v2"
+)
 
-type (
-	Domain struct {
-		Name string
+/*
+=======================
+
+	&Wrapper[Answer]{
+		value: &Answer{
+			Name: answer,
+		},
 	}
 
-	ReqDomain struct {
+=======================
+*/
+type (
+	Wrapper[T any] struct {
+		value *T
+	}
+	Answer struct {
 		Name string
 	}
 )
 
-func AskCertFile(FileList []string) (string, error) {
+type ReturnType interface {
+	Answer
+}
+
+func newField[T ReturnType](value T) *Wrapper[T] {
+	return &Wrapper[T]{
+		value: &value,
+	}
+}
+
+func getAnswer[T ReturnType](w *Wrapper[T]) *T {
+	return w.value
+}
+
+func AskInput(Message string, PageSize int) (string, error) {
+
+	prompt := &survey.Input{
+		Message: Message,
+	}
+
+	answer := ""
+	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
+		icons.SelectFocus.Format = "green+hb"
+	}), survey.WithPageSize(PageSize)); err != nil {
+		return "", err
+	}
+
+	n := newField(Answer{
+		Name: answer,
+	})
+
+	return getAnswer(n).Name, nil
+}
+
+func AskSelect(Message string, FileList []string, PageSize int) (string, error) {
+
 	prompt := &survey.Select{
-		Message: "choose file",
+		Message: Message,
 		Options: FileList,
 	}
 
 	answer := ""
 	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
 		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(20)); err != nil {
+	}), survey.WithPageSize(PageSize)); err != nil {
 		return "", err
 	}
 
 	return answer, nil
-}
-
-func AskDomain() (*Domain, error) {
-	var domainName string
-
-	prompt := &survey.Input{
-		Message: "What is your domain ?",
-	}
-
-	if err := survey.AskOne(prompt, &domainName, survey.WithIcons(func(icons *survey.IconSet) {
-		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(20)); err != nil {
-		return nil, err
-	}
-
-	return &Domain{Name: domainName}, nil
-}
-
-func AskReqDomain() (*ReqDomain, error) {
-	var reqDomainName string
-
-	prompt := &survey.Input{
-		Message: "What is your request domain ?",
-	}
-
-	if err := survey.AskOne(prompt, &reqDomainName, survey.WithIcons(func(icons *survey.IconSet) {
-		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(2)); err != nil {
-		return nil, err
-	}
-
-	return &ReqDomain{Name: reqDomainName}, nil
-
 }
