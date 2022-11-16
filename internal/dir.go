@@ -6,7 +6,8 @@ import (
 )
 
 type CertFile struct {
-	Name []string
+	Name      []string
+	Extension string
 }
 
 func Dir() (*CertFile, error) {
