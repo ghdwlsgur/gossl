@@ -7,9 +7,9 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 )
 
@@ -67,7 +67,14 @@ func (r Response) getRespConnection() string {
 	return r.respConnection
 }
 
-func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response, error) {
+/* The following commands are implemented in code.
+"echo | openssl s_client -showcerts -connect [ProxyIP]:[Port] -servername [Domain]"
+"curl -vo /dev/null -H 'Range:bytes=0-1' --resolve '[Domain]:[Port]:[ProxyIP]' 'https://[Domain]"
+*/
+
+// This means it can be used as an alternative to the command
+// Connect to requestDomain from the edge server of the domain passed as an argument.
+func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string) (*Response, error) {
 
 	res := &Response{}
 	var ipList []string
@@ -76,28 +83,23 @@ func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response,
 		ipList = append(ipList, ip.String())
 	}
 
-	prompt := &survey.Select{
-		Message: "choose ip",
-		Options: ipList,
-	}
-
-	answer := ""
-	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
-		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(len(ipList))); err != nil {
+	message := fmt.Sprintf("Select %s A record", domain)
+	answer, err := AskSelect(message, ipList, len(ipList))
+	if err != nil {
 		return nil, err
 	}
 
-	ref := fmt.Sprintf("https://%s:443@%s:443", domainName, answer)
+	// The default connection is https.
+	ref := fmt.Sprintf("https://%s:443@%s:443", domain, answer)
 	url_i := url.URL{}
 
-	// url_proxy, err := url_i.Parse("https://sangdo-vod02.fastedge.net:443@61.110.198.20:443")
+	// url_proxy, err := url_i.Parse("https://[Domain]:[Port]@[ProxyIP]:[Port]")
 	url_proxy, err := url_i.Parse(ref)
 	if err != nil {
 		return nil, err
 	}
 
-	// 5초 이내로 타임아웃 설정
+	// Set timeout within 5 seconds
 	transport := http.Transport{
 		Dial: (&net.Dialer{
 			Timeout: 5 * time.Second,
@@ -105,14 +107,15 @@ func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response,
 		TLSHandshakeTimeout: 5 * time.Second,
 	}
 
-	// 프록시 설정
+	// Set Proxy
 	transport.Proxy = http.ProxyURL(url_proxy)
-	// SSL (TLS) 설정
+
+	// Set tls Configuration
 	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	dialAddr := fmt.Sprintf("%s:443", domainName)
+	dialAddr := fmt.Sprintf("%s:443", domain)
 
-	// conn, err := tls.Dial("tcp", "sangdo-vod02.fastedge.net:443", transport.TLSClientConfig)
+	// conn, err := tls.Dial("tcp", "[Domain]:[Port]", transport.TLSClientConfig)
 	conn, err := tls.Dial("tcp", dialAddr, transport.TLSClientConfig)
 	if err != nil {
 		return nil, err
@@ -131,13 +134,15 @@ func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response,
 			res.certStartDate = cert.NotBefore.Format("2006-January-02")
 			res.certExpireDate = cert.NotAfter.Format("2006-January-02")
 
-			// fmt.Println(cert.VerifyHostname(""))
+			h := fmt.Sprintf("%s", cert.VerifyHostname(""))
+			hl := strings.Split(h, ",")
+
+			fmt.Printf("VerifyHostName: %s\n", hl[:len(hl)-1])
 			fmt.Printf("Subject:\t%s\n", res.getSubject())
 			fmt.Printf("Issuer Name:\t%s\n", res.getCertIssuerName())
 			fmt.Printf("Common Name:\t%s\n", res.getCertCommonName())
 			fmt.Printf("Start Date:\t%s\n", res.getCertStartDate())
 			fmt.Printf("Expire Date:\t%s\n", color.HiGreenString(res.getCertExpireDate()))
-
 		}
 	}
 
@@ -145,12 +150,13 @@ func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response,
 		Transport: &transport,
 	}
 
-	url := fmt.Sprintf("http://%s", reqDomainName)
-	// resp, err := client.Get("http://sangdo-vod02.fastedge.net")
+	url := fmt.Sprintf("http://%s", requestDomain)
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
+
+	resp.Header.Add("Range", "bytes: 0-1")
 
 	res.respStatus = resp.Status
 	res.respDate = resp.Header.Values("Date")[0]
@@ -158,7 +164,14 @@ func Validate(ips []net.IP, domainName string, reqDomainName string) (*Response,
 	res.respContentType = resp.Header.Values("Content-Type")[0]
 	res.respConnection = resp.Header.Values("Connection")[0]
 
-	fmt.Printf("%s\t\t%s\n", "Status:", res.getRespStatus())
+	if res.getRespStatus()[0:1] == "5" {
+		fmt.Printf("%s\t\t%s\n", "Status:", color.HiRedString(res.getRespStatus()))
+	} else if res.getRespStatus()[0:1] == "4" {
+		fmt.Printf("%s\t\t%s\n", "Status:", color.HiYellowString(res.getRespStatus()))
+	} else {
+		fmt.Printf("%s\t\t%s\n", "Status:", color.HiGreenString(res.getRespStatus()))
+	}
+
 	fmt.Printf("%s\t\t%s\n", "Date:", res.getRespDate())
 	fmt.Printf("%s\t\t%s\n", "Server:", color.HiGreenString(res.getRespServer()))
 	fmt.Printf("%s\t%s\n", "Content-Type", res.getRespContentType())
