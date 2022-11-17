@@ -2,6 +2,7 @@ package internal
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
 	"net"
@@ -84,7 +85,7 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 	}
 
 	message := fmt.Sprintf("Select %s A record", domain)
-	answer, err := AskSelect(message, ipList, len(ipList))
+	answer, err := AskSelect(message, ipList)
 	if err != nil {
 		return nil, err
 	}
@@ -189,4 +190,28 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 		respConnection:  res.respConnection,
 	}, nil
 
+}
+
+func DistinguishCertificate(p *Pem, c *CertFile) (string, error) {
+
+	cert, err := x509.ParseCertificate(p.Block.Bytes)
+	if err != nil {
+		return "", err
+	}
+
+	if cert.IsCA {
+
+		if cert.Subject.String() == cert.Issuer.String() {
+			return "Root Certificate", nil
+		} else {
+			return "Intermediate Certificate", nil
+		}
+
+	}
+
+	if c.Extension == "crt" || c.Extension == "pem" {
+		return "Leaf Certificate", nil
+	}
+
+	return "Unknown", nil
 }

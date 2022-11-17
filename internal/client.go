@@ -22,10 +22,14 @@ type (
 	Answer struct {
 		Name string
 	}
+
+	AnswerList struct {
+		Name []string
+	}
 )
 
 type ReturnType interface {
-	Answer
+	Answer | AnswerList
 }
 
 func newField[T ReturnType](value T) *Wrapper[T] {
@@ -36,6 +40,27 @@ func newField[T ReturnType](value T) *Wrapper[T] {
 
 func getAnswer[T ReturnType](w *Wrapper[T]) *T {
 	return w.value
+}
+
+func AskMultiSelect(Message string, Options []string) ([]string, error) {
+
+	prompt := &survey.MultiSelect{
+		Message: Message,
+		Options: Options,
+	}
+
+	answer := []string{}
+	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
+		icons.SelectFocus.Format = "green+hb"
+	}), survey.WithPageSize(len(Options))); err != nil {
+		return nil, nil
+	}
+
+	n := newField(AnswerList{
+		Name: answer,
+	})
+
+	return getAnswer(n).Name, nil
 }
 
 func AskInput(Message string, PageSize int) (string, error) {
@@ -58,19 +83,23 @@ func AskInput(Message string, PageSize int) (string, error) {
 	return getAnswer(n).Name, nil
 }
 
-func AskSelect(Message string, FileList []string, PageSize int) (string, error) {
+func AskSelect(Message string, Options []string) (string, error) {
 
 	prompt := &survey.Select{
 		Message: Message,
-		Options: FileList,
+		Options: Options,
 	}
 
 	answer := ""
 	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
 		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(PageSize)); err != nil {
+	}), survey.WithPageSize(len(Options))); err != nil {
 		return "", err
 	}
 
-	return answer, nil
+	n := newField(Answer{
+		Name: answer,
+	})
+
+	return getAnswer(n).Name, nil
 }

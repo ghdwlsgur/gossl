@@ -10,6 +10,10 @@ type CertFile struct {
 	Extension string
 }
 
+func (c CertFile) getExtension() string {
+	return c.Extension
+}
+
 func Dir() (*CertFile, error) {
 
 	fileInfo, err := os.ReadDir("./")
@@ -17,16 +21,25 @@ func Dir() (*CertFile, error) {
 		return nil, err
 	}
 
-	certFile := &CertFile{}
+	c := &CertFile{}
 	for _, f := range fileInfo {
 		if !f.Type().IsDir() {
 			s := strings.Split(f.Name(), ".")
 			extension := s[len(s)-1]
 			if extension == "pem" || extension == "crt" || extension == "key" {
-				certFile.Name = append(certFile.Name, f.Name())
+				c.Name = append(c.Name, f.Name())
 			}
 		}
 	}
 
-	return certFile, nil
+	return c, nil
+}
+
+func GetCertExtension(c *CertFile) string {
+	return c.getExtension()
+}
+
+func SetCertExtension(c *CertFile, file string) {
+	wordList := strings.Split(file, ".")
+	c.Extension = strings.Split(file, ".")[len(wordList)-1]
 }
