@@ -22,8 +22,8 @@ func getArguments(arg []string) (string, error) {
 }
 
 var (
-	certCommand = &cobra.Command{
-		Use:   "cert",
+	connectCommand = &cobra.Command{
+		Use:   "connect",
 		Short: "test",
 		Long:  "test",
 		Run: func(_ *cobra.Command, _ []string) {
@@ -56,8 +56,8 @@ var (
 )
 
 func init() {
-	certCommand.Flags().StringP("t", "", "", "description")
-	viper.BindPFlag("target-domain", certCommand.Flags().Lookup("t"))
+	connectCommand.Flags().StringP("t", "", "", "description")
+	viper.BindPFlag("target-domain", connectCommand.Flags().Lookup("t"))
 
-	rootCmd.AddCommand(certCommand)
+	rootCmd.AddCommand(connectCommand)
 }
