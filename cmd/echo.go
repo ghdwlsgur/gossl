@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/ghdwlsgur/cert-check/internal"
@@ -11,18 +13,17 @@ import (
 )
 
 var (
-	certFile *internal.CertFile
-	p        *internal.Pem
-	m        *internal.Md5
-)
-
-var (
 	// Query certificate or key file type and Md5 hash
 	echoCommand = &cobra.Command{
 		Use:   "echo",
-		Short: "test",
-		Long:  "test",
-		Run: func(_ *cobra.Command, _ []string) {
+		Short: "Show the contents of the certificate file/type and compare hashes.",
+		Long:  "Show the contents of the certificate file/type and compare hashes.",
+		Run: func(cmd *cobra.Command, args []string) {
+			var (
+				certFile *internal.CertFile
+				p        *internal.Pem
+				m        *internal.Md5
+			)
 
 			// Outputs a list of files with extensions ending in pem, crt, or key
 			certFile, err = internal.Dir()
@@ -60,6 +61,19 @@ var (
 				fmt.Printf("Md5 Hash: \t%s\n", color.HiBlackString((m.RsaPrivateKey)))
 
 			} else if p.Type == "CERTIFICATE" {
+
+				cert, err := x509.ParseCertificate(p.Block.Bytes)
+				if err != nil {
+					panicRed(err)
+				}
+
+				h := fmt.Sprintf("%s", cert.VerifyHostname(""))
+				hl := strings.Split(h, ",")
+
+				fmt.Printf("VerifyHostName: %s\n", hl[:len(hl)-1])
+				fmt.Printf("Subject:\t%s\n", cert.Subject)
+				fmt.Printf("Issuer Name:\t%s\n", cert.Issuer)
+				fmt.Printf("Expire Date:\t%s\n", cert.NotAfter.Format("2006-January-02"))
 
 				fmt.Printf("Type:   \t%s\n", p.Type)
 
