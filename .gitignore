@@ -3,4 +3,7 @@
 **.crt
 **.zip
 .DS_Store
+
 vendor
+dist
+gopath
