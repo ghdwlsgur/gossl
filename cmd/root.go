@@ -10,9 +10,9 @@ import (
 
 var (
 	rootCmd = &cobra.Command{
-		Use:   "cert-check",
-		Short: `cert-check test`,
-		Long:  `cert-check test`,
+		Use:   "gossl",
+		Short: `gossl is an interactive CLI that compares certificate file types and md5 hash, or curls results from the origin domain's name servers to the target domain.`,
+		Long:  `gossl is an interactive CLI that compares certificate file types and md5 hash, or curls results from the origin domain's name servers to the target domain.`,
 	}
 )
 
