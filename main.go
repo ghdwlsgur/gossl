@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ghdwlsgur/cert-check/cmd"
+	"github.com/ghdwlsgur/gossl/cmd"
 )
 
 func main() {

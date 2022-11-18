@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/ghdwlsgur/cert-check/internal"
+	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
 )
 

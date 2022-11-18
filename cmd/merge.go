@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ghdwlsgur/cert-check/internal"
+	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
