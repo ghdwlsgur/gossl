@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/ghdwlsgur/cert-check/internal"
 	"github.com/spf13/cobra"
@@ -13,29 +13,20 @@ var (
 	err error
 )
 
-func getArguments(arg []string) (string, error) {
-
-	if len(arg) < 3 {
-		return "", fmt.Errorf("please write the domain as an argument")
-	}
-	return arg[2:3][0], nil
-}
-
+// curl -vo /dev/null -H 'Range:bytes=0-1' --resolve '[-n field]:443:[NS_record]' 'https://[-t field]
 var (
 	connectCommand = &cobra.Command{
 		Use:   "connect",
-		Short: "test",
-		Long:  "test",
-		Run: func(_ *cobra.Command, _ []string) {
+		Short: "Connect to the target domain from the origin domain's name server.",
+		Long:  "Connect to the target domain from the origin domain's name server.",
+		Run: func(cmd *cobra.Command, args []string) {
 
-			domain, err := getArguments(os.Args)
-			if err != nil {
-				panicRed(err)
+			domain := strings.TrimSpace(viper.GetString("origin-domain"))
+			if domain == "" {
+				panicRed(fmt.Errorf("please enter your domain. ex) gossl connect -n naver.com"))
 			}
 
-			var target string
-			target = viper.GetString("target-domain")
-
+			target := strings.TrimSpace(viper.GetString("target-domain"))
 			if target == "" {
 				target = domain
 			}
@@ -56,8 +47,11 @@ var (
 )
 
 func init() {
-	connectCommand.Flags().StringP("t", "", "", "description")
-	viper.BindPFlag("target-domain", connectCommand.Flags().Lookup("t"))
+	connectCommand.Flags().StringP("name", "n", "", "[required] Enter the origin domain that is used as a proxy server.")
+	connectCommand.Flags().StringP("target", "t", "", "[optional] The domain that sends the final response through the proxy.")
+
+	viper.BindPFlag("origin-domain", connectCommand.Flags().Lookup("name"))
+	viper.BindPFlag("target-domain", connectCommand.Flags().Lookup("target"))
 
 	rootCmd.AddCommand(connectCommand)
 }
