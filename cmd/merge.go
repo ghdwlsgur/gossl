@@ -4,23 +4,29 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/ghdwlsgur/cert-check/internal"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
 	mergeCommand = &cobra.Command{
 		Use:   "merge",
-		Short: "",
-		Long:  "",
-		Run: func(_ *cobra.Command, _ []string) {
+		Short: "Combine each certificate file in order of leaf, intermediate, root.",
+		Long:  "Combine each certificate file in order of leaf, intermediate, root.",
+		Run: func(cmd *cobra.Command, args []string) {
+			var (
+				certFile *internal.CertFile
+				p        *internal.Pem
+			)
 
-			arg, err := internal.GetArguments(os.Args)
-			if err != nil {
-				panicRed(err)
+			argName := viper.GetString("file-name")
+			if argName == "" {
+				argName = "gossl_merge_output"
 			}
-			newFile := fmt.Sprintf("%s.pem", arg)
+			newFile := fmt.Sprintf("%s.pem", strings.TrimSpace(argName))
 
 			certFile, err = internal.Dir()
 			if err != nil {
@@ -37,118 +43,85 @@ var (
 				panicRed(fmt.Errorf("please select up to 3"))
 			}
 
-			// if n < 2 {
-			// 	panicRed(fmt.Errorf("please select at least 2"))
-			// }
+			if n < 2 {
+				panicRed(fmt.Errorf("please select at least 2"))
+			}
 
-			// if n == 2 {
-			// 	n += 1
-			// }
-
-			t, err := os.Create(newFile)
+			file, err := os.Create(newFile)
 			if err != nil {
 				panicRed(err)
 			}
-			defer t.Close()
+			defer file.Close()
 
-			// k := make([]*pem.Block, n)
+			leafBlock := []*pem.Block{}
+			intermediateBlock := []*pem.Block{}
+			rootBlock := []*pem.Block{}
 
-			for _, s := range selectList {
-				internal.SetCertExtension(certFile, s)
+			for _, selectCert := range selectList {
+				internal.SetCertExtension(certFile, selectCert)
 
-				p, err = internal.GetPemType(s)
-				// if err != nil {
-				// 	panicRed(err)
-				// }
-
-				data, err := os.ReadFile(s)
+				p, err = internal.GetPemType(selectCert)
 				if err != nil {
 					panicRed(err)
 				}
-				var blocks []byte
-				p = &internal.Pem{}
+
+				detail, err := internal.DistinguishCertificate(p, certFile)
+				if err != nil {
+					panicRed(err)
+				}
+
+				data, err := os.ReadFile(selectCert)
+				if err != nil {
+					panicRed(err)
+				}
+
+				b, _ := pem.Decode(data)
+				if b.Type == "RSA PRIVATE KEY" {
+					panicRed(fmt.Errorf("please select only the certificate file"))
+				}
+
 				for {
 					var block *pem.Block
 					block, data = pem.Decode(data)
 					if block == nil {
 						break
 					}
-					if err := pem.Encode(t, block); err != nil {
-						panicRed(err)
+
+					if detail == "Leaf Certificate" {
+						leafBlock = append(leafBlock, block)
+					} else if detail == "Intermediate Certificate" {
+						intermediateBlock = append(intermediateBlock, block)
+					} else if detail == "Root Certificate" {
+						rootBlock = append(rootBlock, block)
 					}
-					blocks = append(blocks, block.Bytes...)
+
 					if len(data) == 0 {
 						break
 					}
 				}
 
-				// c, err := x509.ParseCertificates(blocks)
-				// if err != nil {
-				// 	panicRed(err)
-				// }
-				// for _, asd := range c {
-				// 	fmt.Println(asd.PublicKey.(*rsa.PublicKey).N)
-				// }
-
-				// p, _ := pem.Decode(data)
-
-				// if err := pem.Encode(os.Stdout, p.Block); err != nil {
-				// 	panicRed(err)
-				// }
-
-				// 	if p.Type == "CERTIFICATE" {
-				// 		detail, err := internal.DistinguishCertificate(p, certFile)
-				// 		if err != nil {
-				// 			panicRed(err)
-				// 		}
-
-				// 		if detail == "Leaf Certificate" {
-				// 			k[0] = p.Block
-				// 		} else if detail == "Intermediate Certificate" {
-				// 			k[1] = p.Block
-				// 			// fmt.Println(base64.StdEncoding.EncodeToString(p.Block.Bytes))
-				// 		} else if detail == "Root Certificate" {
-				// 			k[2] = p.Block
-				// 		}
-				// 	} else {
-				// 		panicRed(fmt.Errorf("please select only the certificate file"))
-				// 	}
-				// }
-
-				// var blocks []byte
-				// for _, v := range k {
-				// 	// fmt.Println("g")
-				// 	// rest := v.Bytes
-				// 	// for {
-				// 	// 	var block *pem.Block
-				// 	// 	block, rest := pem.Decode(rest)
-				// 	// 	if block == nil {
-				// 	// 		fmt.Println("go")
-				// 	// 		break
-				// 	// 	}
-				// 	// 	blocks = append(blocks, block.Bytes...)
-				// 	// 	if len(rest) == 0 {
-				// 	// 		break
-				// 	// 	}
-				// 	// 	if err := pem.Encode(os.Stdout, block); err != nil {
-				// 	// 		panicRed(err)
-				// 	// 	}
-				// 	// }
-
-				// 	if err := pem.Encode(t, v); err != nil {
-				// 		panicRed(err)
-				// 	}
-
-				// 	// if err := pem.Encode(os.Stdout, b); err != nil {
-				// 	// 	panicRed(err)
-				// 	// }
-
 			}
 
+			blockBucket := make([][]*pem.Block, 3)
+			blockBucket[0] = leafBlock
+			blockBucket[1] = intermediateBlock
+			blockBucket[2] = rootBlock
+
+			for i := 0; i < len(blockBucket); i++ {
+				for _, block := range blockBucket[i] {
+					if err := pem.Encode(file, block); err != nil {
+						panicRed(err)
+					}
+				}
+			}
 		},
 	}
 )
 
 func init() {
+	mergeCommand.Flags().StringP("name", "n", "", "[optional] Enter the file name to create.")
+
+	viper.BindPFlag("file-name", mergeCommand.Flags().Lookup("name"))
+
 	rootCmd.AddCommand(mergeCommand)
 }
