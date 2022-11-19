@@ -23,7 +23,6 @@ var (
 			)
 
 			argName := viper.GetString("pem-file-name")
-			fmt.Println(argName)
 			if argName == "" {
 				argName = "gossl_merge_output"
 			}
