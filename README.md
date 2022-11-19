@@ -14,7 +14,19 @@
 
 # Overview
 
-An interactive cli tool that easily binds HTTPS certificates and diagnoses whether certificates are applied with edge servers as proxy.
+An Interactive CLI Tool that easily combines or validates https certificates(leaf, intermediate, root) and diagnoses whether certificates are applied with edge servers(a record address) as proxy.
+
+# Chain of trust
+
+![스크린샷 2022-11-19 오후 5 26 49](https://user-images.githubusercontent.com/77400522/202842089-542edbb9-4c0a-44cb-93a9-0f3e61dd5ecf.png)
+
+- https://en.wikipedia.org/wiki/Chain_of_trust
+
+A chain of trust is designed to allow multiple users to create and use software on the system, which would be more difficult if all the keys were stored directly in hardware. It starts with hardware that will only boot from software that is digitally signed. The signing authority will only sign boot programs that enforce security, such as only running programs that are themselves signed, or only allowing signed code to have access to certain features of the machine. This process may continue for several layers.
+
+This process results in a chain of trust. The final software can be trusted to have certain properties, because if it had been illegally modified its signature would be invalid, and the previous software would not have executed it. The previous software can be trusted, because it, in turn, would not have been loaded if its signature had been invalid. The trustworthiness of each layer is guaranteed by the one before, back to the trust anchor.
+
+It would be possible to have the hardware check the suitability (signature) for every single piece of software. However, this would not produce the flexibility that a "chain" provides. In a chain, any given link can be replaced with a different version to provide different properties, without having to go all the way back to the trust anchor. This use of multiple layers is an application of a general technique to improve scalability, and is analogous to the use of multiple certificates in a certificate chain.
 
 # Why
 
@@ -58,23 +70,15 @@ brew upgrade gossl
 
 > Describe the workflow with gossl command arguments.
 
-### `echo` -> `merge` -> `zip` -> `connect`
+### echo ➡️ merge ➡️ zip ➡️ connect
 
-### echo
+- `echo`: Check the type of each certificate file and compare the md5 hash values.
 
-- Check the type of each certificate file and compare the md5 hash values.
+- `merge`: Combine the verified certificate files in the order of leaf, intermediate, and root.
 
-### merge
+- `zip`: Compress the merged certificate file and rsa private key into a zip file.
 
-- Combine the verified certificate files in the order of leaf, intermediate, and root.
-
-### zip
-
-- Compress the merged certificate file and rsa private key into a zip file.
-
-### connect
-
-- You get a response from the target domain by proxying it to the a record address of the domain you are using the https protocol.
+- `connect`: You get a response from the target domain by proxying it to the a record address of the domain you are using the https protocol.
 
 # How to use
 
@@ -91,13 +95,18 @@ root.crt
 rsa_private.key
 ```
 
-### `echo`
+## `echo`
 
 ```bash
 gossl echo
 ```
 
+<p align="center">
+<img src="https://user-images.githubusercontent.com/77400522/202838670-ce5fed38-bd4f-4800-bf0c-fe29197109bb.mov" width="680", height="550" />
+
 ### Response Field
+
+> When selecting a certificate file, provide the fields below.
 
 if Type == CERTIFICATE {
 
@@ -105,27 +114,94 @@ if Type == CERTIFICATE {
 - VerifyHostName
 - Issuer Name
 - Expire Date
-- Type
-- Detail
+- Type: `CERTIFICATE` | `RSA PRIVATE KEY`
+- Detail: `LEAF` | `INTERMEDIATE` | `ROOT`
 - Md5 Hash
 
 }
+
+> If the selected file is an RSA PRIVATE KEY which is locked with a password, gossl is entered password from the user.
 
 if Type == RSA PRIVATE KEY {
 
 - pem.block
-- Type
+- Type: `CERTIFICATE` | `RSA PRIVATE KEY`
 - Md5 Hash
 
 }
 
-### Example
+---
+
+## `merge`
+
+> If you select the certificate file to integrate regardless of type, the certificate files are integrated in the order of `leaf`, `intermediate`, and `root`.
+
+- A file with a certificate extension must exist in that location.
+- You must select at least two and no more than three.
+
+```bash
+# [output file name: gossl_merge_output.pem]
+gossl merge
+
+# [output file name: test.pem]
+gossl merge -n test
+```
 
 <p align="center">
-<img src="https://user-images.githubusercontent.com/77400522/202838670-ce5fed38-bd4f-4800-bf0c-fe29197109bb.mov" width="680", height="550" />
+<img src="https://user-images.githubusercontent.com/77400522/202840001-74b38122-1164-40dd-a0e5-6153ceeea01c.mov" width="680", height="550" />
 </p>
 
----
+### `zip`
+
+```bash
+# [output file name: gossl_zip_output.zip]
+gossl zip
+
+# [output file name: test.zip]
+gossl zip -n test
+```
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/77400522/202840112-1b0b2054-8864-450a-af92-5e6799a2cd9e.mov" width="680", height="550" />
+</p>
+
+### `connect`
+
+> The -n argument is called the origin domain, and the -t argument is called the target domain.
+
+> -n `argument`: `origin domain` / -t `argument`: `target domain`
+
+- If the target domain is omitted, the origin domain goes in as the target domain.
+- Get the response from the target domain by proxying the address of the origin domain's A record
+- The two commands below produce the same result.
+- For curl you have to manually enter the origin domain's a record, but gossl interactively provides an a record option.
+
+### gossl
+
+```bash
+gossl connect -n naver.com -t naver.com/include/themecast/targetAndPanels.json
+```
+
+### curl
+
+```bash
+curl -vo /dev/null -H 'Range:bytes=0-1' --resolve 'naver.com:443:223.130.195.95' 'https://www.naver.com/include/themecast/targetAndPanels.json'
+```
+
+```bash
+# [default target: -n field]
+# below default target: naver.com
+# below command equals `gossl connect -n naver.com -t naver.com`
+gossl connect -n naver.com
+
+# [origin domain: naver.com]
+# [target domain: naver.com/include/themecast/targetAndPanels.json]
+gossl connect -n naver.com -t naver.com/include/themecast/targetAndPanels.json
+```
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/77400522/202840383-f44fd164-bfe3-4a01-9738-f08ea1b88ce5.mov" width="680", height="550" />
+</p>
 
 # License
 
