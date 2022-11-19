@@ -16,12 +16,12 @@ var (
 		Use:   "zip",
 		Short: "Compress each file",
 		Long:  "Compress each file",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			var (
 				certFile *internal.CertFile
 			)
 
-			argName := viper.GetString("file-name")
+			argName := viper.GetString("zip-file-name")
 			if argName == "" {
 				argName = "gossl_zip_output"
 			}
@@ -59,7 +59,7 @@ var (
 func init() {
 	zipCommand.Flags().StringP("name", "n", "", "[optional] Enter the name of the compressed file.")
 
-	viper.BindPFlag("file-name", zipCommand.Flags().Lookup("name"))
+	viper.BindPFlag("zip-file-name", zipCommand.Flags().Lookup("name"))
 
 	rootCmd.AddCommand(zipCommand)
 }
