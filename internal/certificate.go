@@ -26,6 +26,7 @@ type Response struct {
 	respServer        string
 	respContentType   string
 	respConnection    string
+	respCacheControl  string
 }
 
 func (r Response) getSubject() pkix.Name {
@@ -66,6 +67,10 @@ func (r Response) getRespContentType() string {
 
 func (r Response) getRespConnection() string {
 	return r.respConnection
+}
+
+func (r Response) getRespCacheControl() string {
+	return r.respCacheControl
 }
 
 /* The following commands are implemented in code.
@@ -138,12 +143,12 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 			h := fmt.Sprintf("%s", cert.VerifyHostname(""))
 			hl := strings.Split(h, ",")
 
-			fmt.Printf("VerifyHostName: %s\n", hl[:len(hl)-1])
-			fmt.Printf("Subject:\t%s\n", res.getSubject())
-			fmt.Printf("Issuer Name:\t%s\n", res.getCertIssuerName())
-			fmt.Printf("Common Name:\t%s\n", res.getCertCommonName())
-			fmt.Printf("Start Date:\t%s\n", res.getCertStartDate())
-			fmt.Printf("Expire Date:\t%s\n", color.HiGreenString(res.getCertExpireDate()))
+			fmt.Printf("VerifyHostName %s\n", hl[:len(hl)-1])
+			fmt.Printf("Subject\t\t%s\n", res.getSubject())
+			fmt.Printf("Issuer Name\t%s\n", res.getCertIssuerName())
+			fmt.Printf("Common Name\t%s\n", res.getCertCommonName())
+			fmt.Printf("Start Date\t%s\n", res.getCertStartDate())
+			fmt.Printf("Expire Date\t%s\n", color.HiGreenString(res.getCertExpireDate()))
 		}
 	}
 
@@ -158,25 +163,41 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 	}
 
 	resp.Header.Add("Range", "bytes: 0-1")
-
 	res.respStatus = resp.Status
-	res.respDate = resp.Header.Values("Date")[0]
-	res.respServer = resp.Header.Values("Server")[0]
-	res.respContentType = resp.Header.Values("Content-Type")[0]
-	res.respConnection = resp.Header.Values("Connection")[0]
 
-	if res.getRespStatus()[0:1] == "5" {
-		fmt.Printf("%s\t\t%s\n", "Status:", color.HiRedString(res.getRespStatus()))
-	} else if res.getRespStatus()[0:1] == "4" {
-		fmt.Printf("%s\t\t%s\n", "Status:", color.HiYellowString(res.getRespStatus()))
-	} else {
-		fmt.Printf("%s\t\t%s\n", "Status:", color.HiGreenString(res.getRespStatus()))
+	headerField := []string{"Date", "Server", "Content-Type", "Connection", "Cache-Control"}
+
+	for _, directive := range headerField {
+		if fieldCheck := len(resp.Header.Values(directive)); fieldCheck > 0 {
+
+			switch directive {
+			case "Date":
+				res.respDate = resp.Header.Values(directive)[0]
+			case "Server":
+				res.respServer = resp.Header.Values(directive)[0]
+			case "Content-Type":
+				res.respContentType = resp.Header.Values(directive)[0]
+			case "Connection":
+				res.respConnection = resp.Header.Values(directive)[0]
+			case "Cache-Control":
+				res.respCacheControl = resp.Header.Values(directive)[0]
+			}
+		}
 	}
 
-	fmt.Printf("%s\t\t%s\n", "Date:", res.getRespDate())
-	fmt.Printf("%s\t\t%s\n", "Server:", color.HiGreenString(res.getRespServer()))
+	if res.getRespStatus()[0:1] == "5" {
+		fmt.Printf("%s\t\t%s\n", "Status", color.HiRedString(res.getRespStatus()))
+	} else if res.getRespStatus()[0:1] == "4" {
+		fmt.Printf("%s\t\t%s\n", "Status", color.HiYellowString(res.getRespStatus()))
+	} else {
+		fmt.Printf("%s\t\t%s\n", "Status", color.HiGreenString(res.getRespStatus()))
+	}
+
+	fmt.Printf("%s\t\t%s\n", "Date", res.getRespDate())
+	fmt.Printf("%s\t\t%s\n", "Server", color.HiGreenString(res.getRespServer()))
 	fmt.Printf("%s\t%s\n", "Content-Type", res.getRespContentType())
 	fmt.Printf("%s\t%s\n", "Connection", res.getRespConnection())
+	fmt.Printf("%s\t%s\n", "Cache-Control", res.getRespCacheControl())
 
 	return &Response{
 		certIssuerName:  res.certIssuerName,
