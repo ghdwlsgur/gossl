@@ -16,13 +16,14 @@ var (
 		Use:   "merge",
 		Short: "Combine each certificate file in order of leaf, intermediate, root.",
 		Long:  "Combine each certificate file in order of leaf, intermediate, root.",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			var (
 				certFile *internal.CertFile
 				p        *internal.Pem
 			)
 
-			argName := viper.GetString("file-name")
+			argName := viper.GetString("pem-file-name")
+			fmt.Println(argName)
 			if argName == "" {
 				argName = "gossl_merge_output"
 			}
@@ -121,7 +122,7 @@ var (
 func init() {
 	mergeCommand.Flags().StringP("name", "n", "", "[optional] Enter the file name to create.")
 
-	viper.BindPFlag("file-name", mergeCommand.Flags().Lookup("name"))
+	viper.BindPFlag("pem-file-name", mergeCommand.Flags().Lookup("name"))
 
 	rootCmd.AddCommand(mergeCommand)
 }

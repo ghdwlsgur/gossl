@@ -19,7 +19,7 @@ var (
 		Use:   "connect",
 		Short: "Connect to the target domain from the origin domain's name server.",
 		Long:  "Connect to the target domain from the origin domain's name server.",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 
 			domain := strings.TrimSpace(viper.GetString("origin-domain"))
 			if domain == "" {

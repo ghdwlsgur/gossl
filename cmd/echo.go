@@ -18,7 +18,7 @@ var (
 		Use:   "echo",
 		Short: "Show the contents of the certificate file/type and compare hashes.",
 		Long:  "Show the contents of the certificate file/type and compare hashes.",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			var (
 				certFile *internal.CertFile
 				p        *internal.Pem
