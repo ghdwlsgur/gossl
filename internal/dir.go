@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -12,6 +13,10 @@ type CertFile struct {
 
 func (c CertFile) getExtension() string {
 	return c.Extension
+}
+
+func (c CertFile) getCertFileLength() int {
+	return len(c.Name)
 }
 
 func Dir() (*CertFile, error) {
@@ -30,6 +35,10 @@ func Dir() (*CertFile, error) {
 				c.Name = append(c.Name, f.Name())
 			}
 		}
+	}
+
+	if c.getCertFileLength() == 0 {
+		return nil, fmt.Errorf("there are no extension files(pem, crt, key) in the current directory")
 	}
 
 	return c, nil
