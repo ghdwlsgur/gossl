@@ -13,7 +13,6 @@ var (
 	err error
 )
 
-// curl -vo /dev/null -H 'Range:bytes=0-1' --resolve '[-n field]:443:[NS_record]' 'https://[-t field]
 var (
 	connectCommand = &cobra.Command{
 		Use:   "connect",

@@ -73,10 +73,11 @@ func (r Response) getRespCacheControl() string {
 	return r.respCacheControl
 }
 
-/* The following commands are implemented in code.
-"echo | openssl s_client -showcerts -connect [ProxyIP]:[Port] -servername [Domain]"
-"curl -vo /dev/null -H 'Range:bytes=0-1' --resolve '[Domain]:[Port]:[ProxyIP]' 'https://[Domain]"
-*/
+// ! curl
+// curl -vo /dev/null -H 'Range:bytes=0-1' --resolve 'naver.com:443:223.130.195.95' 'https://www.naver.com/include/themecast/targetAndPanels.json'
+
+// ! gossl
+// gossl connect -n naver.com -t naver.com/include/themecast/targetAndPanels.json
 
 // This means it can be used as an alternative to the command
 // Connect to requestDomain from the edge server of the domain passed as an argument.
