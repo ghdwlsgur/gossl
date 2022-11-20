@@ -203,9 +203,7 @@ gossl validate -n naver.com
 gossl validate -n naver.com -t naver.com/include/themecast/targetAndPanels.json
 ```
 
-<p align="center">
-<img src="https://user-images.githubusercontent.com/77400522/202840383-f44fd164-bfe3-4a01-9738-f08ea1b88ce5.mov" width="680", height="550" />
-</p>
+![스크린샷 2022-11-20 오후 8 17 22](https://user-images.githubusercontent.com/77400522/202899103-02deec88-69b6-462c-be3a-85fad715a4cb.png)
 
 ### `stat`
 
