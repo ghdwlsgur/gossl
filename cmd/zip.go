@@ -19,6 +19,7 @@ var (
 		Run: func(_ *cobra.Command, _ []string) {
 			var (
 				certFile *internal.CertFile
+				err      error
 			)
 
 			argName := viper.GetString("zip-file-name")
