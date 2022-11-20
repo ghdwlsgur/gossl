@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	connectCommand = &cobra.Command{
-		Use:   "connect",
-		Short: "Connect to the target domain from the origin domain's name server.",
-		Long:  "Connect to the target domain from the origin domain's name server.",
+	validateCommand = &cobra.Command{
+		Use:   "validate",
+		Short: "Proxy the A record ip address of the cache server to review the application of the certificate.",
+		Long:  "Proxy the A record ip address of the cache server to review the application of the certificate.",
 		Run: func(_ *cobra.Command, _ []string) {
 			var (
 				err error
@@ -45,11 +45,11 @@ var (
 )
 
 func init() {
-	connectCommand.Flags().StringP("name", "n", "", "[required] Enter the origin domain that is used as a proxy server.")
-	connectCommand.Flags().StringP("target", "t", "", "[optional] The domain that sends the final response through the proxy.")
+	validateCommand.Flags().StringP("name", "n", "", "[required] Enter the origin domain that is used as a proxy server.")
+	validateCommand.Flags().StringP("target", "t", "", "[optional] The domain that sends the final response through the proxy.")
 
-	viper.BindPFlag("origin-domain", connectCommand.Flags().Lookup("name"))
-	viper.BindPFlag("target-domain", connectCommand.Flags().Lookup("target"))
+	viper.BindPFlag("origin-domain", validateCommand.Flags().Lookup("name"))
+	viper.BindPFlag("target-domain", validateCommand.Flags().Lookup("target"))
 
-	rootCmd.AddCommand(connectCommand)
+	rootCmd.AddCommand(validateCommand)
 }
