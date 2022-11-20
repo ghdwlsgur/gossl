@@ -70,7 +70,7 @@ brew upgrade gossl
 
 > Describe the workflow with gossl command arguments.
 
-### echo ➡️ merge ➡️ zip ➡️ connect ➡️ stat
+### echo ➡️ merge ➡️ zip ➡️ validate ➡️ stat
 
 - `echo`: Check the type of each certificate file and compare the md5 hash values.
 
@@ -78,7 +78,7 @@ brew upgrade gossl
 
 - `zip`: Compress the merged certificate file and rsa private key into a zip file.
 
-- `connect`: You get a response from the target domain by proxying it to the a record address of the domain you are using the https protocol.
+- `validate`: You get a response from the target domain by proxying it to the a record address of the domain you are using the https protocol.
 
 - `stat`: It is used to receive responses by fixing IPs of all A records in the target domain.
 
@@ -167,7 +167,9 @@ gossl zip -n test
 <img src="https://user-images.githubusercontent.com/77400522/202840112-1b0b2054-8864-450a-af92-5e6799a2cd9e.mov" width="680", height="550" />
 </p>
 
-### `connect`
+### `validate`
+
+> Used to verify the application of the certificate to the origin server.
 
 > The -n argument is called the origin domain, and the -t argument is called the target domain.
 
@@ -181,7 +183,7 @@ gossl zip -n test
 ### gossl
 
 ```bash
-gossl connect -n naver.com -t naver.com/include/themecast/targetAndPanels.json
+gossl validate -n naver.com -t naver.com/include/themecast/targetAndPanels.json
 ```
 
 ### curl
@@ -194,11 +196,11 @@ curl -vo /dev/null -H 'Range:bytes=0-1' --resolve 'naver.com:443:223.130.195.95'
 # [default target: -n field]
 # below default target: naver.com
 # below command equals `gossl connect -n naver.com -t naver.com`
-gossl connect -n naver.com
+gossl validate -n naver.com
 
 # [origin domain: naver.com]
 # [target domain: naver.com/include/themecast/targetAndPanels.json]
-gossl connect -n naver.com -t naver.com/include/themecast/targetAndPanels.json
+gossl validate -n naver.com -t naver.com/include/themecast/targetAndPanels.json
 ```
 
 <p align="center">
