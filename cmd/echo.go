@@ -23,6 +23,7 @@ var (
 				certFile *internal.CertFile
 				p        *internal.Pem
 				m        *internal.Md5
+				err      error
 			)
 
 			// Outputs a list of files with extensions ending in pem, crt, or key

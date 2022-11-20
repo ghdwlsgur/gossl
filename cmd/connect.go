@@ -10,15 +10,14 @@ import (
 )
 
 var (
-	err error
-)
-
-var (
 	connectCommand = &cobra.Command{
 		Use:   "connect",
 		Short: "Connect to the target domain from the origin domain's name server.",
 		Long:  "Connect to the target domain from the origin domain's name server.",
 		Run: func(_ *cobra.Command, _ []string) {
+			var (
+				err error
+			)
 
 			domain := strings.TrimSpace(viper.GetString("origin-domain"))
 			if domain == "" {

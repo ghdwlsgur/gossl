@@ -20,6 +20,7 @@ var (
 			var (
 				certFile *internal.CertFile
 				p        *internal.Pem
+				err      error
 			)
 
 			argName := viper.GetString("pem-file-name")
