@@ -70,7 +70,7 @@ brew upgrade gossl
 
 > Describe the workflow with gossl command arguments.
 
-### echo ➡️ merge ➡️ zip ➡️ connect
+### echo ➡️ merge ➡️ zip ➡️ connect ➡️ stat
 
 - `echo`: Check the type of each certificate file and compare the md5 hash values.
 
@@ -79,6 +79,8 @@ brew upgrade gossl
 - `zip`: Compress the merged certificate file and rsa private key into a zip file.
 
 - `connect`: You get a response from the target domain by proxying it to the a record address of the domain you are using the https protocol.
+
+- `stat`: It is used to receive responses by fixing IPs of all A records in the target domain.
 
 # How to use
 
@@ -201,6 +203,49 @@ gossl connect -n naver.com -t naver.com/include/themecast/targetAndPanels.json
 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/77400522/202840383-f44fd164-bfe3-4a01-9738-f08ea1b88ce5.mov" width="680", height="550" />
+</p>
+
+### `stat`
+
+> Receives the response of the url to each A record of the target domain to the url using the http or https protocol.
+
+> It is used to receive responses by fixing IPs of all A records in the target domain.
+
+- If the target url uses the `http` protocol, enter http as the first argument.
+  ```bash
+  gossl stat http -u [url] -t [target]
+  ```
+- If the target url uses the `https` protocol, enter https as the first argument.
+  ```bash
+  gossl stat https -u [url] -t [target]
+  ```
+- -u `url`: [required] This argument refers to the responding subject.
+- -t `target`: [required] Connect the url domain to the A record IP of the target domain. It can often be origin.
+- -H `host`: [optional] The value to put in the host directive of the request header.
+- -p `port`: [optional] When using the http protocol, it is used to fix another port number, and the default value is 80. Ignored when using https protocol.
+
+### gossl
+
+```bash
+gossl stat https -u naver.com -t naver.com -H naver.com
+```
+
+### curl
+
+```bash
+ curl --http1.1 -k -D- -o /dev/null -H 'Host:naver.com' -H 'Range:bytes=0-1' --resolve 'naver.com:443:223.130.195.95' 'https://naver.com'
+```
+
+### Request
+
+```bash
+gossl stat https -u naver.com -t naver.com -H naver.com
+```
+
+### Response
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/77400522/202898682-e5c236b5-6772-41d6-86b2-cd9d5214b021.mov" width="680", height="550" />
 </p>
 
 # License
