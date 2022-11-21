@@ -138,18 +138,36 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 			res.subjectCommonName = cert.Subject.CommonName
 			res.certIssuerName = cert.Issuer
 			res.certCommonName = cert.Issuer.CommonName
-			res.certStartDate = cert.NotBefore.Format("2006-January-02")
-			res.certExpireDate = cert.NotAfter.Format("2006-January-02")
+			res.certStartDate = cert.NotBefore.Format("2006-01-02")
+			res.certExpireDate = cert.NotAfter.Format("2006-01-02")
 
 			h := fmt.Sprintf("%s", cert.VerifyHostname(""))
 			hl := strings.Split(h, ",")
 
-			fmt.Printf("VerifyHostName %s\n", hl[:len(hl)-1])
-			fmt.Printf("Subject\t\t%s\n", res.getSubject())
-			fmt.Printf("Issuer Name\t%s\n", res.getCertIssuerName())
-			fmt.Printf("Common Name\t%s\n", res.getCertCommonName())
-			fmt.Printf("Start Date\t%s\n", res.getCertStartDate())
-			fmt.Printf("Expire Date\t%s\n", color.HiGreenString(res.getCertExpireDate()))
+			now, _ := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
+			expireDate, _ := time.Parse("2006-01-02", res.getCertExpireDate())
+
+			var colorDays string
+			days := int32(expireDate.Sub(now).Hours() / 24)
+			if days < 30 {
+				colorDays = color.HiRedString(fmt.Sprintf("[%v days]", days))
+			} else {
+				colorDays = color.HiGreenString(fmt.Sprintf("[%v days]", days))
+			}
+
+			fmt.Printf("\n%s\n", color.HiWhiteString("Certificate"))
+			fmt.Printf("%s\t%s\n",
+				color.HiBlackString("Verify Host"),
+				strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
+
+			printSplitFunc(res.getSubject().String(), "Subjectj")
+			printSplitFunc(res.getCertIssuerName().String(), "Issuer Name")
+
+			fmt.Printf("%s\t%s\n", color.HiBlackString("Common Name"), res.getCertCommonName())
+			fmt.Printf("%s\t%s\n", color.HiBlackString("Start Date"), res.getCertStartDate())
+			fmt.Printf("%s\t%s %s\n",
+				color.HiBlackString("Expire Date"),
+				color.HiGreenString(res.getCertExpireDate()), colorDays)
 		}
 	}
 
@@ -187,18 +205,18 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 	}
 
 	if res.getRespStatus()[0:1] == "5" {
-		fmt.Printf("%s\t\t%s\n", "Status", color.HiRedString(res.getRespStatus()))
+		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiRedString(res.getRespStatus()))
 	} else if res.getRespStatus()[0:1] == "4" {
-		fmt.Printf("%s\t\t%s\n", "Status", color.HiYellowString(res.getRespStatus()))
+		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiYellowString(res.getRespStatus()))
 	} else {
-		fmt.Printf("%s\t\t%s\n", "Status", color.HiGreenString(res.getRespStatus()))
+		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiGreenString(res.getRespStatus()))
 	}
 
-	fmt.Printf("%s\t\t%s\n", "Date", res.getRespDate())
-	fmt.Printf("%s\t\t%s\n", "Server", color.HiGreenString(res.getRespServer()))
-	fmt.Printf("%s\t%s\n", "Content-Type", res.getRespContentType())
-	fmt.Printf("%s\t%s\n", "Connection", res.getRespConnection())
-	fmt.Printf("%s\t%s\n", "Cache-Control", res.getRespCacheControl())
+	fmt.Printf("%s\t\t%s\n", color.HiBlackString("Date"), res.getRespDate())
+	fmt.Printf("%s\t\t%s\n", color.HiBlackString("Server"), color.HiGreenString(res.getRespServer()))
+	fmt.Printf("%s\t%s\n", color.HiBlackString("Content-Type"), res.getRespContentType())
+	fmt.Printf("%s\t%s\n", color.HiBlackString("Connection"), res.getRespConnection())
+	fmt.Printf("%s\t%s\n\n", color.HiBlackString("Cache-Control"), res.getRespCacheControl())
 
 	return &Response{
 		certIssuerName:  res.certIssuerName,
@@ -236,4 +254,18 @@ func DistinguishCertificate(p *Pem, c *CertFile) (string, error) {
 	}
 
 	return "Unknown", nil
+}
+
+func printSplitFunc(word, field string) {
+	for i, n := range strings.Split(word, ",") {
+		if i == 0 {
+			if len(word) < 8 {
+				fmt.Printf("%s\t\t%s\n", color.HiBlackString(field), n)
+			} else {
+				fmt.Printf("%s\t%s\n", color.HiBlackString(field), n)
+			}
+		} else {
+			fmt.Printf("\t\t%s\n", n)
+		}
+	}
 }
