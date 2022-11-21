@@ -114,12 +114,6 @@ func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string,
 		return err
 	}
 
-	defaultClient := http.DefaultClient
-	respFromDefaultClient, err := defaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
 	reqDirective := &Request{}
 	if len(resp.Request.Header.Values("host")) > 0 {
 		reqDirective.hostField = resp.Request.Header.Values("host")[0] // [optional]
@@ -128,9 +122,6 @@ func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string,
 
 	res := &Response{}
 	res.respStatus = resp.Status
-	if len(respFromDefaultClient.Header.Values("Server")) > 0 {
-		res.respServer = respFromDefaultClient.Header.Values("Server")[0]
-	}
 
 	fmt.Printf("%s\n", color.HiWhiteString("Request Headers"))
 	fmt.Printf("%s\t\t%s\n", color.HiBlackString("Host"), reqDirective.getHost())
@@ -145,7 +136,6 @@ func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string,
 		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiGreenString(res.getRespStatus()))
 	}
 
-	// awaiting refactoring (use recursive pattern)
 	for directive, value := range resp.Header {
 		length := len(directive)
 
@@ -167,12 +157,7 @@ func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string,
 			fmt.Printf("%s\t%s\n", color.HiBlackString(directive), value[0])
 		}
 	}
-
-	if len(resp.Header.Values("Server")) < 1 {
-		fmt.Printf("%s\t\t%s\n\n", color.HiBlackString("Server"), res.getRespServer())
-	} else {
-		fmt.Println()
-	}
+	fmt.Println()
 
 	return nil
 }
@@ -283,22 +268,12 @@ func HTTPSResponseStat(ip string, targetUrl, targetUrlHost string, target string
 		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiGreenString(res.getRespStatus()))
 	}
 
-	// awaiting refactoring (use recursive pattern)
 	for directive, value := range resp.Header {
 		length := len(directive)
 
 		if length > 14 {
-			var prefixBucket []string
-			words := strings.Split(directive, "-")
-			for i, word := range words {
-				if i != len(words)-1 {
-					prefixBucket = append(prefixBucket, word[:1])
-				}
-			}
-
-			front := strings.Join(prefixBucket, "")
-			directiveFormat := strings.Join([]string{front, words[len(words)-1]}, "-")
-			fmt.Printf("%s\t%s\n", color.HiBlackString(directiveFormat), value[0])
+			word := stringFormat(directive)
+			fmt.Printf("%s\t%s\n", color.HiBlackString(word), value[0])
 		} else if length < 8 {
 			fmt.Printf("%s\t\t%s\n", color.HiBlackString(directive), value[0])
 		} else {
@@ -306,12 +281,26 @@ func HTTPSResponseStat(ip string, targetUrl, targetUrlHost string, target string
 		}
 	}
 
-	if len(resp.Header.Values("Server")) < 1 {
-		fmt.Printf("%s\t\t%s\n\n", color.HiBlackString("Server"), res.getRespServer())
-	} else {
-		fmt.Println()
-	}
+	fmt.Println()
 
 	return nil
 
+}
+
+func stringFormat(word string) string {
+
+	var prefixBucket []string
+	words := strings.Split(word, "-")
+	for i, w := range words {
+		if i != len(words)-1 {
+			prefixBucket = append(prefixBucket, w[:1])
+		}
+	}
+	front := strings.Join(prefixBucket, "")
+	wordFormat := strings.Join([]string{front, words[len(words)-1]}, "-")
+
+	if len(wordFormat) > 14 {
+		stringFormat(wordFormat)
+	}
+	return wordFormat
 }
