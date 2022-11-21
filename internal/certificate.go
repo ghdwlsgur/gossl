@@ -160,11 +160,11 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 				color.HiBlackString("Verify Host"),
 				strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
 
-			printSplitFunc(res.getSubject().String(), "Subjectj")
+			printSplitFunc(res.getSubject().String(), "Subject")
 			printSplitFunc(res.getCertIssuerName().String(), "Issuer Name")
 
-			fmt.Printf("%s\t%s\n", color.HiBlackString("Common Name"), res.getCertCommonName())
-			fmt.Printf("%s\t%s\n", color.HiBlackString("Start Date"), res.getCertStartDate())
+			printFunc("Common Name", res.getCertCommonName())
+			printFunc("Start Date", res.getCertStartDate())
 			fmt.Printf("%s\t%s %s\n",
 				color.HiBlackString("Expire Date"),
 				color.HiGreenString(res.getCertExpireDate()), colorDays)
@@ -204,19 +204,21 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 		}
 	}
 
-	if res.getRespStatus()[0:1] == "5" {
+	statusCode := res.getRespStatus()[0:1]
+	if statusCode == "5" {
 		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiRedString(res.getRespStatus()))
-	} else if res.getRespStatus()[0:1] == "4" {
+	} else if statusCode == "4" {
 		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiYellowString(res.getRespStatus()))
 	} else {
 		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiGreenString(res.getRespStatus()))
 	}
 
-	fmt.Printf("%s\t\t%s\n", color.HiBlackString("Date"), res.getRespDate())
-	fmt.Printf("%s\t\t%s\n", color.HiBlackString("Server"), color.HiGreenString(res.getRespServer()))
-	fmt.Printf("%s\t%s\n", color.HiBlackString("Content-Type"), res.getRespContentType())
-	fmt.Printf("%s\t%s\n", color.HiBlackString("Connection"), res.getRespConnection())
-	fmt.Printf("%s\t%s\n\n", color.HiBlackString("Cache-Control"), res.getRespCacheControl())
+	printFunc("Date", res.getRespDate())
+	printFunc("Server", res.getRespServer())
+	printFunc("Content-Type", res.getRespContentType())
+	printFunc("Connection", res.getRespConnection())
+	printFunc("Cache-Control", res.getRespCacheControl())
+	fmt.Println()
 
 	return &Response{
 		certIssuerName:  res.certIssuerName,
@@ -259,13 +261,17 @@ func DistinguishCertificate(p *Pem, c *CertFile) (string, error) {
 func printSplitFunc(word, field string) {
 	for i, n := range strings.Split(word, ",") {
 		if i == 0 {
-			if len(word) < 8 {
-				fmt.Printf("%s\t\t%s\n", color.HiBlackString(field), n)
-			} else {
-				fmt.Printf("%s\t%s\n", color.HiBlackString(field), n)
-			}
+			printFunc(field, n)
 		} else {
 			fmt.Printf("\t\t%s\n", n)
 		}
+	}
+}
+
+func printFunc(field, value string) {
+	if len(field) < 8 {
+		fmt.Printf("%s\t\t%s\n", color.HiBlackString(field), value)
+	} else {
+		fmt.Printf("%s\t%s\n", color.HiBlackString(field), value)
 	}
 }
