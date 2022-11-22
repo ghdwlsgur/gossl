@@ -22,6 +22,7 @@ var (
 				target  string
 				port    int
 				host    string
+				referer string
 			)
 
 			protocol := args[0]
@@ -45,6 +46,7 @@ var (
 			}
 
 			host = strings.TrimSpace(viper.GetString("host-name"))
+			referer = strings.TrimSpace(viper.GetString("referer-name"))
 
 			ips, err := internal.GetRecord(target)
 			if err != nil {
@@ -55,7 +57,7 @@ var (
 				port = viper.GetInt("port-number")
 
 				for _, ip := range ips {
-					err = internal.HTTPResponseStat(ip.String(), url, urlHost, target, port, host)
+					err = internal.HTTPResponseStat(ip.String(), url, urlHost, target, port, host, referer)
 					if err != nil {
 						panicRed(err)
 					}
@@ -64,7 +66,7 @@ var (
 
 			if protocol == "https" {
 				for _, ip := range ips {
-					err = internal.HTTPSResponseStat(ip.String(), url, urlHost, target, host)
+					err = internal.HTTPSResponseStat(ip.String(), url, urlHost, target, host, referer)
 					if err != nil {
 						panicRed(err)
 					}
@@ -80,11 +82,13 @@ func init() {
 	statCommand.Flags().StringP("target", "t", "", "[required] Receive responses by proxying the A record of the domain forwarded to the target.")
 	statCommand.Flags().IntP("port", "p", 80, "[optional] For http protocol, the default value is 80.")
 	statCommand.Flags().StringP("http-host", "H", "", "[optional] The host to put in the request headers.")
+	statCommand.Flags().StringP("referer", "r", "", "[optional]")
 
 	viper.BindPFlag("url-domain", statCommand.Flags().Lookup("url"))
 	viper.BindPFlag("stat-target-domain", statCommand.Flags().Lookup("target"))
 	viper.BindPFlag("port-number", statCommand.Flags().Lookup("port"))
 	viper.BindPFlag("host-name", statCommand.Flags().Lookup("http-host"))
+	viper.BindPFlag("referer-name", statCommand.Flags().Lookup("referer"))
 
 	rootCmd.AddCommand(statCommand)
 }

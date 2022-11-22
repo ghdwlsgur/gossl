@@ -30,8 +30,9 @@ type Stat struct {
 }
 
 type Request struct {
-	hostField  string
-	rangeField string
+	hostField    string
+	rangeField   string
+	refererField string
 }
 
 func (r Request) getHost() string {
@@ -42,7 +43,11 @@ func (r Request) getRange() string {
 	return r.rangeField
 }
 
-func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string, port int, host string) error {
+func (r Request) getReferer() string {
+	return r.refererField
+}
+
+func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string, port int, host string, referer string) error {
 
 	ref := fmt.Sprintf("http://%s:%v@%s:%v", targetUrlHost, port, ip, port)
 
@@ -77,6 +82,9 @@ func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string,
 	req.Header.Add("Range", "bytes=0-1")
 	if host != "" {
 		req.Header.Add("Host", host)
+	}
+	if referer != "" {
+		req.Header.Add("Referer", referer)
 	}
 
 	resp, err := client.Do(req)
@@ -114,18 +122,21 @@ func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string,
 		return err
 	}
 
+	fmt.Printf("%s\n", color.HiWhiteString("Request Headers"))
 	reqDirective := &Request{}
 	if len(resp.Request.Header.Values("host")) > 0 {
 		reqDirective.hostField = resp.Request.Header.Values("host")[0] // [optional]
+		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Host"), reqDirective.getHost())
+	}
+	if len(resp.Request.Header.Values("referer")) > 0 {
+		reqDirective.refererField = resp.Request.Header.Values("referer")[0] // [optional]
+		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Referer"), reqDirective.getReferer())
 	}
 	reqDirective.rangeField = resp.Request.Header.Values("range")[0] // [required]
+	fmt.Printf("%s\t\t%s\n\n", color.HiBlackString("Range"), reqDirective.getRange())
 
 	res := &Response{}
 	res.respStatus = resp.Status
-
-	fmt.Printf("%s\n", color.HiWhiteString("Request Headers"))
-	fmt.Printf("%s\t\t%s\n", color.HiBlackString("Host"), reqDirective.getHost())
-	fmt.Printf("%s\t\t%s\n\n", color.HiBlackString("Range"), reqDirective.getRange())
 
 	fmt.Printf("%s\n", color.HiWhiteString("Response Headers"))
 	if res.getRespStatus()[0:1] == "5" {
@@ -162,7 +173,7 @@ func HTTPResponseStat(ip string, targetUrl, targetUrlHost string, target string,
 	return nil
 }
 
-func HTTPSResponseStat(ip string, targetUrl, targetUrlHost string, target string, host string) error {
+func HTTPSResponseStat(ip string, targetUrl, targetUrlHost string, target string, host string, referer string) error {
 
 	ref := fmt.Sprintf("https://%s:443@%s:443", targetUrlHost, ip)
 	netUrl := url.URL{}
@@ -197,7 +208,6 @@ func HTTPSResponseStat(ip string, targetUrl, targetUrlHost string, target string
 	if err != nil {
 		panic(err)
 	}
-
 	var result httpstat.Result
 	ctx := httpstat.WithHTTPStat(req.Context(), &result)
 	req = req.WithContext(ctx)
@@ -205,6 +215,9 @@ func HTTPSResponseStat(ip string, targetUrl, targetUrlHost string, target string
 	req.Header.Add("Range", "bytes=0-1")
 	if host != "" {
 		req.Header.Add("Host", host)
+	}
+	if referer != "" {
+		req.Header.Add("Referer", referer)
 	}
 
 	resp, err := client.Do(req)
@@ -246,18 +259,21 @@ func HTTPSResponseStat(ip string, targetUrl, targetUrlHost string, target string
 		return err
 	}
 
+	fmt.Printf("%s\n", color.HiWhiteString("Request Headers"))
 	reqDirective := &Request{}
 	if len(resp.Request.Header.Values("host")) > 0 {
 		reqDirective.hostField = resp.Request.Header.Values("host")[0] // [optional]
+		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Host"), reqDirective.getHost())
+	}
+	if len(resp.Request.Header.Values("referer")) > 0 {
+		reqDirective.refererField = resp.Request.Header.Values("referer")[0] // [optional]
+		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Referer"), reqDirective.getReferer())
 	}
 	reqDirective.rangeField = resp.Request.Header.Values("range")[0] // [required]
+	fmt.Printf("%s\t\t%s\n\n", color.HiBlackString("Range"), reqDirective.getRange())
 
 	res := &Response{}
 	res.respStatus = resp.Status
-
-	fmt.Printf("%s\n", color.HiWhiteString("Request Headers"))
-	fmt.Printf("%s\t\t%s\n", color.HiBlackString("Host"), reqDirective.getHost())
-	fmt.Printf("%s\t\t%s\n\n", color.HiBlackString("Range"), reqDirective.getRange())
 
 	fmt.Printf("%s\n", color.HiWhiteString("Response Headers"))
 	if res.getRespStatus()[0:1] == "5" {
