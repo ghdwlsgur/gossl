@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
 	"net"
 	"net/http"
@@ -160,11 +161,11 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 				color.HiBlackString("Verify Host"),
 				strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
 
-			printSplitFunc(res.getSubject().String(), "Subject")
-			printSplitFunc(res.getCertIssuerName().String(), "Issuer Name")
+			PrintSplitFunc(res.getSubject().String(), "Subject")
+			PrintSplitFunc(res.getCertIssuerName().String(), "Issuer Name")
 
-			printFunc("Common Name", res.getCertCommonName())
-			printFunc("Start Date", res.getCertStartDate())
+			PrintFunc("Common Name", res.getCertCommonName())
+			PrintFunc("Start Date", res.getCertStartDate())
 			fmt.Printf("%s\t%s %s\n",
 				color.HiBlackString("Expire Date"),
 				color.HiGreenString(res.getCertExpireDate()), colorDays)
@@ -213,11 +214,11 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiGreenString(res.getRespStatus()))
 	}
 
-	printFunc("Date", res.getRespDate())
-	printFunc("Server", res.getRespServer())
-	printFunc("Content-Type", res.getRespContentType())
-	printFunc("Connection", res.getRespConnection())
-	printFunc("Cache-Control", res.getRespCacheControl())
+	PrintFunc("Date", res.getRespDate())
+	PrintFunc("Server", res.getRespServer())
+	PrintFunc("Content-Type", res.getRespContentType())
+	PrintFunc("Connection", res.getRespConnection())
+	PrintFunc("Cache-Control", res.getRespCacheControl())
 	fmt.Println()
 
 	return &Response{
@@ -231,10 +232,27 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 		respContentType: res.respContentType,
 		respConnection:  res.respConnection,
 	}, nil
-
 }
 
-func DistinguishCertificate(p *Pem, c *CertFile) (string, error) {
+func CountPemBlock(bytes []byte) int {
+	var pemBlockCount int
+
+	for {
+		var block *pem.Block
+		block, bytes = pem.Decode(bytes)
+
+		pemBlockCount++
+
+		if block == nil {
+			return pemBlockCount
+		}
+		if len(bytes) == 0 {
+			return pemBlockCount
+		}
+	}
+}
+
+func DistinguishCertificate(p *Pem, c *CertFile, pemBlockCount int) (string, error) {
 
 	cert, err := x509.ParseCertificate(p.Block.Bytes)
 	if err != nil {
@@ -242,36 +260,16 @@ func DistinguishCertificate(p *Pem, c *CertFile) (string, error) {
 	}
 
 	if cert.IsCA {
-
 		if cert.Subject.String() == cert.Issuer.String() {
 			return "Root Certificate", nil
 		} else {
 			return "Intermediate Certificate", nil
 		}
-
 	}
 
-	if c.Extension == "crt" || c.Extension == "pem" {
-		return "Leaf Certificate", nil
+	if pemBlockCount > 2 {
+		return "Unified Certificate", nil
 	}
 
-	return "Unknown", nil
-}
-
-func printSplitFunc(word, field string) {
-	for i, n := range strings.Split(word, ",") {
-		if i == 0 {
-			printFunc(field, n)
-		} else {
-			fmt.Printf("\t\t%s\n", n)
-		}
-	}
-}
-
-func printFunc(field, value string) {
-	if len(field) < 8 {
-		fmt.Printf("%s\t\t%s\n", color.HiBlackString(field), value)
-	} else {
-		fmt.Printf("%s\t%s\n", color.HiBlackString(field), value)
-	}
+	return "Leaf Certificate", nil
 }

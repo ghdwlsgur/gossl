@@ -53,9 +53,13 @@ func GetPemType(file string) (*Pem, error) {
 	}
 
 	block, _ := pem.Decode(data)
-	p.Type = block.Type
-	p.Data = data
-	p.Block = block
+	if block == nil {
+		return nil, fmt.Errorf("%s's pem block is empty, check certificate type", file)
+	} else {
+		p.Type = block.Type
+		p.Data = data
+		p.Block = block
+	}
 
 	return &Pem{
 		Type:  p.getType(),
