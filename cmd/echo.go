@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"os"
 	"strings"
@@ -38,6 +37,13 @@ var (
 				panicRed(err)
 			}
 
+			data, err := os.ReadFile(fileName)
+			if err != nil {
+				panicRed(err)
+			}
+
+			pemBlockCount := internal.CountPemBlock(data)
+
 			// Save the extension of the selected certificate file
 			internal.SetCertExtension(certFile, fileName)
 
@@ -48,18 +54,19 @@ var (
 			}
 
 			// Certificate file output (cat **.pem / **.crt / **.key)
-			if err := pem.Encode(os.Stdout, p.Block); err != nil {
-				panicRed(err)
-			}
+			// if err := pem.Encode(os.Stdout, p.Block); err != nil {
+			// 	panicRed(err)
+			// }
 
+			fmt.Printf(color.HiWhiteString("\n%s\n"), fileName)
 			if p.Type == "RSA PRIVATE KEY" {
 
-				fmt.Printf("Type:   \t%s\n", color.HiRedString(p.Type))
+				internal.PrintFunc("Type", color.HiRedString(p.Type))
 				m, err = internal.GetMd5FromRsaPrivateKey(p)
 				if err != nil {
 					panicRed(err)
 				}
-				fmt.Printf("Md5 Hash: \t%s\n", color.HiBlackString((m.RsaPrivateKey)))
+				internal.PrintFunc("Md5 Hash", color.HiBlackString(m.RsaPrivateKey))
 
 			} else if p.Type == "CERTIFICATE" {
 
@@ -71,27 +78,27 @@ var (
 				h := fmt.Sprintf("%s", cert.VerifyHostname(""))
 				hl := strings.Split(h, ",")
 
-				fmt.Printf("VerifyHostName: %s\n", hl[:len(hl)-1])
-				fmt.Printf("Subject:\t%s\n", cert.Subject)
-				fmt.Printf("Issuer Name:\t%s\n", cert.Issuer)
-				fmt.Printf("Expire Date:\t%s\n", cert.NotAfter.Format("2006-January-02"))
+				fmt.Printf("%s\t%s\n",
+					color.HiBlackString("Verify Host"),
+					strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
+				internal.PrintSplitFunc(cert.Subject.String(), "Subject")
+				internal.PrintSplitFunc(cert.Issuer.String(), "Issuer Name")
+				internal.PrintFunc("Expire Date", cert.NotAfter.Format("2006-January-02"))
+				internal.PrintFunc("Type", p.Type)
 
-				fmt.Printf("Type:   \t%s\n", p.Type)
-
-				// In the case of a certificate file, classification of certificate types
-				detail, err := internal.DistinguishCertificate(p, certFile)
+				detail, err := internal.DistinguishCertificate(p, certFile, pemBlockCount)
 				if err != nil {
 					panicRed(err)
 				}
-				fmt.Printf("Detail: \t%s\n", color.HiMagentaString(detail))
+				internal.PrintFunc("Detail", color.MagentaString(detail))
 
 				m, err = internal.GetMd5FromCertificate(p)
 				if err != nil {
 					panicRed(err)
 				}
-				fmt.Printf("Md5 Hash: \t%s\n", color.HiBlackString(m.Certificate))
+				internal.PrintFunc("Md5 Hash", color.HiBlackString(m.Certificate))
 			}
-
+			fmt.Println()
 		},
 	}
 )
