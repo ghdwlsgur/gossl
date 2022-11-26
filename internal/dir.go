@@ -31,14 +31,15 @@ func Dir() (*CertFile, error) {
 		if !f.Type().IsDir() {
 			s := strings.Split(f.Name(), ".")
 			extension := s[len(s)-1]
-			if extension == "pem" || extension == "crt" || extension == "key" {
+
+			if extension == "pem" || extension == "crt" || extension == "key" || extension == "ca" || extension == "csr" {
 				c.Name = append(c.Name, f.Name())
 			}
 		}
 	}
 
 	if c.getCertFileLength() == 0 {
-		return nil, fmt.Errorf("there are no extension files(pem, crt, key) in the current directory")
+		return nil, fmt.Errorf("[pem, crt, key, ca, csr] extension files do not exist")
 	}
 
 	return c, nil
