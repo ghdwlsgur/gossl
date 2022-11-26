@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -61,19 +62,24 @@ var (
 			for _, selectCert := range selectList {
 				internal.SetCertExtension(certFile, selectCert)
 
+				data, err := os.ReadFile(selectCert)
+				if err != nil {
+					panicRed(err)
+				}
+
 				p, err = internal.GetPemType(selectCert)
 				if err != nil {
 					panicRed(err)
 				}
 
-				detail, err := internal.DistinguishCertificate(p, certFile)
+				pemBlockCount := internal.CountPemBlock(data)
+				detail, err := internal.DistinguishCertificate(p, certFile, pemBlockCount)
 				if err != nil {
 					panicRed(err)
 				}
 
-				data, err := os.ReadFile(selectCert)
-				if err != nil {
-					panicRed(err)
+				if detail == "Unified Certificate" {
+					panicRed(fmt.Errorf("%s is already merged certificate file, please choose another file", selectCert))
 				}
 
 				b, _ := pem.Decode(data)
@@ -100,7 +106,6 @@ var (
 						break
 					}
 				}
-
 			}
 
 			blockBucket := make([][]*pem.Block, 3)
@@ -115,6 +120,7 @@ var (
 					}
 				}
 			}
+			fmt.Printf(color.HiGreenString("📄 %s created successfully\n"), newFile)
 		},
 	}
 )

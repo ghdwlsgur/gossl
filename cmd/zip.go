@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -52,7 +53,7 @@ var (
 					panicRed(err)
 				}
 			}
-
+			fmt.Printf(color.HiGreenString("📄 %s created successfully\n"), newFile)
 		},
 	}
 )
