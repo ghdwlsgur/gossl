@@ -8,17 +8,6 @@ import (
 	"github.com/fatih/color"
 )
 
-/*
-=======================
-
-	&Wrapper[Answer]{
-		value: &Answer{
-			Name: answer,
-		},
-	}
-
-=======================
-*/
 type (
 	Wrapper[T any] struct {
 		value *T
@@ -108,8 +97,8 @@ func AskSelect(Message string, Options []string) (string, error) {
 	return getAnswer(n).Name, nil
 }
 
-func PrintSplitFunc(word, field string) {
-	for i, n := range strings.Split(word, ",") {
+func PrintSplitFunc(field, value string) {
+	for i, n := range strings.Split(value, ",") {
 		if i == 0 {
 			PrintFunc(field, n)
 		} else {

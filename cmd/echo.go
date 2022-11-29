@@ -81,8 +81,8 @@ var (
 				fmt.Printf("%s\t%s\n",
 					color.HiBlackString("Verify Host"),
 					strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
-				internal.PrintSplitFunc(cert.Subject.String(), "Subject")
-				internal.PrintSplitFunc(cert.Issuer.String(), "Issuer Name")
+				internal.PrintSplitFunc("Subject", cert.Subject.String())
+				internal.PrintSplitFunc("Issuer Name", cert.Issuer.String())
 				internal.PrintFunc("Expire Date", cert.NotAfter.Format("2006-January-02"))
 				internal.PrintFunc("Type", p.Type)
 
