@@ -106,3 +106,30 @@ var (
 func init() {
 	rootCmd.AddCommand(echoCommand)
 }
+
+// ephemeral
+// func whois(domainName, server string) string {
+// 	conn, err := net.Dial("tcp", server+":43")
+// 	if err != nil {
+// 		fmt.Println("Error")
+// 	}
+
+// 	defer conn.Close()
+
+// 	conn.Write([]byte(domainName + "\r\n"))
+
+// 	buf := make([]byte, 1024)
+// 	result := []byte{}
+
+// 	for {
+// 		numBytes, err := conn.Read(buf)
+// 		fmt.Println(numBytes)
+// 		sbuf := buf[0:numBytes]
+// 		result = append(result, sbuf...)
+// 		if err != nil {
+// 			break
+// 		}
+// 	}
+
+// 	return string(result)
+// }
