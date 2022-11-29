@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/ghdwlsgur/gossl/internal"
@@ -29,10 +30,12 @@ var (
 				panicRed(err)
 			}
 
-			for {
-				_, err = internal.GetCertificateOnTheProxy(ips, domain)
-				if err != nil {
-					panicRed(err)
+			for _, ip := range ips {
+				if net.ParseIP(ip.String()).To4() != nil {
+					err = internal.GetCertificateInfo(ip.String(), domain)
+					if err != nil {
+						panicRed(err)
+					}
 				}
 			}
 		},

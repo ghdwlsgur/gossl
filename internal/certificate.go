@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -8,101 +9,46 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
 )
 
-type Response struct {
-	subject           pkix.Name
-	subjectCommonName string
-	certIssuerName    pkix.Name
-	certCommonName    string
-	certStartDate     string
-	certExpireDate    string
-	respDate          string
-	respServer        string
-	respContentType   string
-	respConnection    string
-	respCacheControl  string
+type x509Certificate struct {
+	Subject          pkix.Name
+	IssuerName       pkix.Name
+	IssuerCommonName string
+	StartDate        string
+	ExpireDate       string
 }
 
-func (r Response) getSubject() pkix.Name {
-	return r.subject
+type Connection struct {
+	transport http.Transport
 }
 
-func (r Response) getCertIssuerName() pkix.Name {
-	return r.certIssuerName
+func (r x509Certificate) getSubject() pkix.Name {
+	return r.Subject
 }
 
-func (r Response) getCertCommonName() string {
-	return r.certCommonName
+func (r x509Certificate) getIssuerName() pkix.Name {
+	return r.IssuerName
 }
 
-func (r Response) getCertStartDate() string {
-	return r.certStartDate
+func (r x509Certificate) getIssuerCommonName() string {
+	return r.IssuerCommonName
 }
 
-func (r Response) getCertExpireDate() string {
-	return r.certExpireDate
+func (r x509Certificate) getStartDate() string {
+	return r.StartDate
 }
 
-func (r Response) getRespDate() string {
-	return r.respDate
+func (r x509Certificate) getExpireDate() string {
+	return r.ExpireDate
 }
 
-func (r Response) getRespServer() string {
-	return r.respServer
-}
+func SetTransport(domainName, ip string) *Connection {
 
-func (r Response) getRespContentType() string {
-	return r.respContentType
-}
-
-func (r Response) getRespConnection() string {
-	return r.respConnection
-}
-
-func (r Response) getRespCacheControl() string {
-	return r.respCacheControl
-}
-
-// ! curl
-// curl -vo /dev/null -H 'Range:bytes=0-1' --resolve 'naver.com:443:223.130.195.95' 'https://www.naver.com/include/themecast/targetAndPanels.json'
-
-// ! gossl
-// gossl connect -n naver.com -t naver.com/include/themecast/targetAndPanels.json
-
-// This means it can be used as an alternative to the command
-// Connect to requestDomain from the edge server of the domain passed as an argument.
-func GetCertificateOnTheProxy(ips []net.IP, domain string) (*Response, error) {
-
-	res := &Response{}
-	var ipList []string
-	ipList = make([]string, 0, len(ips))
-	for _, ip := range ips {
-		ipList = append(ipList, ip.String())
-	}
-
-	message := fmt.Sprintf("Select %s A record", domain)
-	answer, err := AskSelect(message, ipList)
-	if err != nil {
-		return nil, err
-	}
-
-	// The default connection is https.
-	ref := fmt.Sprintf("https://%s:443@%s:443", domain, answer)
-	url_i := url.URL{}
-
-	// url_proxy, err := url_i.Parse("https://[Domain]:[Port]@[ProxyIP]:[Port]")
-	url_proxy, err := url_i.Parse(ref)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set timeout within 5 seconds
 	transport := http.Transport{
 		Dial: (&net.Dialer{
 			Timeout: 5 * time.Second,
@@ -110,111 +56,82 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string) (*Response, error) {
 		TLSHandshakeTimeout: 5 * time.Second,
 	}
 
-	// Set Proxy
-	transport.Proxy = http.ProxyURL(url_proxy)
-
-	// Set tls Configuration
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	dialAddr := fmt.Sprintf("%s:443", domain)
-
-	// conn, err := tls.Dial("tcp", "[Domain]:[Port]", transport.TLSClientConfig)
-	conn, err := tls.Dial("tcp", dialAddr, transport.TLSClientConfig)
-	if err != nil {
-		return nil, err
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		DualStack: true,
 	}
-	defer conn.Close()
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if addr == fmt.Sprintf("%s:443", domainName) {
+			addr = fmt.Sprintf("%s:443", ip)
+		}
+		return dialer.DialContext(ctx, network, addr)
+	}
 
-	certs := conn.ConnectionState().PeerCertificates
+	transport.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+		MinVersion:         tls.VersionTLS11,
+		MaxVersion:         tls.VersionTLS13,
+	}
 
-	for _, cert := range certs {
+	return &Connection{
+		transport: transport,
+	}
+}
+
+func expireDateCountToColor(expireDate string) string {
+	nowFormat, _ := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
+	expireFormat, _ := time.Parse("2006-01-02", expireDate)
+
+	days := int32(expireFormat.Sub(nowFormat).Hours() / 24)
+	if days < 30 {
+		return color.HiRedString(fmt.Sprintf("[%v days]", days))
+	}
+	return color.HiGreenString(fmt.Sprintf("[%v days]", days))
+}
+
+func getCertificationField(peerCertificates []*x509.Certificate, ip string) {
+	for _, cert := range peerCertificates {
 		if len(cert.DNSNames) > 0 {
-
-			res.subject = cert.Subject
-			res.subjectCommonName = cert.Subject.CommonName
-			res.certIssuerName = cert.Issuer
-			res.certCommonName = cert.Issuer.CommonName
-			res.certStartDate = cert.NotBefore.Format("2006-01-02")
-			res.certExpireDate = cert.NotAfter.Format("2006-01-02")
+			formatDate := "2006-01-02"
+			x509C := &x509Certificate{
+				Subject:          cert.Subject,
+				IssuerName:       cert.Issuer,
+				IssuerCommonName: cert.Issuer.CommonName,
+				StartDate:        cert.NotBefore.Format(formatDate),
+				ExpireDate:       cert.NotAfter.Format(formatDate),
+			}
 
 			h := fmt.Sprintf("%s", cert.VerifyHostname(""))
 			hl := strings.Split(h, ",")
 
-			now, _ := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
-			expireDate, _ := time.Parse("2006-01-02", res.getCertExpireDate())
+			fmt.Printf("\n%s [%s]\n", color.HiWhiteString("Certificate"), color.HiYellowString(ip))
+			PrintFunc("Verify Host", strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
+			PrintSplitFunc("Subject", x509C.getSubject().String())
+			PrintSplitFunc("Issuer Name", x509C.getIssuerName().String())
+			PrintFunc("Common Name", x509C.getIssuerCommonName())
+			PrintFunc("Start Date", x509C.getStartDate())
 
-			var colorDays string
-			days := int32(expireDate.Sub(now).Hours() / 24)
-			if days < 30 {
-				colorDays = color.HiRedString(fmt.Sprintf("[%v days]", days))
-			} else {
-				colorDays = color.HiGreenString(fmt.Sprintf("[%v days]", days))
-			}
-
-			fmt.Printf("\n%s\n", color.HiWhiteString("Certificate"))
-			fmt.Printf("%s\t%s\n",
-				color.HiBlackString("Verify Host"),
-				strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
-
-			PrintSplitFunc(res.getSubject().String(), "Subject")
-			PrintSplitFunc(res.getCertIssuerName().String(), "Issuer Name")
-
-			PrintFunc("Common Name", res.getCertCommonName())
-			PrintFunc("Start Date", res.getCertStartDate())
-			fmt.Printf("%s\t%s %s\n",
-				color.HiBlackString("Expire Date"),
-				color.HiGreenString(res.getCertExpireDate()), colorDays)
+			colorDays := expireDateCountToColor(x509C.getExpireDate())
+			PrintFunc("Expire Date", fmt.Sprintf("%s %s", color.HiGreenString(x509C.getExpireDate()), colorDays))
 		}
 	}
+}
 
-	client := &http.Client{
-		Transport: &transport,
-	}
+func GetCertificateInfo(ip string, domain string) error {
 
-	url := fmt.Sprintf("http://%s", domain)
-	resp, err := client.Get(url)
+	c := SetTransport(domain, ip)
+	transport := c.transport
+
+	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:443", domain), transport.TLSClientConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	resp.Header.Add("Range", "bytes: 0-1")
+	defer conn.Close()
 
-	headerField := []string{"Date", "Server", "Content-Type", "Connection", "Cache-Control"}
+	getCertificationField(conn.ConnectionState().PeerCertificates, ip)
 
-	for _, directive := range headerField {
-		if fieldCheck := len(resp.Header.Values(directive)); fieldCheck > 0 {
-
-			switch directive {
-			case "Date":
-				res.respDate = resp.Header.Values(directive)[0]
-			case "Server":
-				res.respServer = resp.Header.Values(directive)[0]
-			case "Content-Type":
-				res.respContentType = resp.Header.Values(directive)[0]
-			case "Connection":
-				res.respConnection = resp.Header.Values(directive)[0]
-			case "Cache-Control":
-				res.respCacheControl = resp.Header.Values(directive)[0]
-			}
-		}
-	}
-
-	PrintFunc("Date", res.getRespDate())
-	PrintFunc("Server", res.getRespServer())
-	PrintFunc("Content-Type", res.getRespContentType())
-	PrintFunc("Connection", res.getRespConnection())
-	PrintFunc("Cache-Control", res.getRespCacheControl())
-	fmt.Println()
-
-	return &Response{
-		certIssuerName:  res.certIssuerName,
-		certCommonName:  res.certCommonName,
-		certStartDate:   res.certStartDate,
-		certExpireDate:  res.certExpireDate,
-		respDate:        res.respDate,
-		respServer:      res.respServer,
-		respContentType: res.respContentType,
-		respConnection:  res.respConnection,
-	}, nil
+	return nil
 }
 
 func CountPemBlock(bytes []byte) int {
@@ -249,7 +166,6 @@ func DistinguishCertificate(p *Pem, c *CertFile, pemBlockCount int) (string, err
 			if cert.Subject.CommonName == "Sectigo RSA Domain Validation Secure Server CA" {
 				return "Root Certificate", nil
 			}
-
 			if cert.Subject.CommonName == "GoGetSSL RSA DV CA" {
 				return "Root Certificate", nil
 			}
