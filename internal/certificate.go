@@ -77,7 +77,7 @@ func (r Response) getRespCacheControl() string {
 
 // This means it can be used as an alternative to the command
 // Connect to requestDomain from the edge server of the domain passed as an argument.
-func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string) (*Response, error) {
+func GetCertificateOnTheProxy(ips []net.IP, domain string) (*Response, error) {
 
 	res := &Response{}
 	var ipList []string
@@ -171,7 +171,7 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 		Transport: &transport,
 	}
 
-	url := fmt.Sprintf("http://%s", requestDomain)
+	url := fmt.Sprintf("http://%s", domain)
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err

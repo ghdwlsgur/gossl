@@ -24,18 +24,13 @@ var (
 				panicRed(fmt.Errorf("please enter your domain. ex) gossl connect -n naver.com"))
 			}
 
-			target := strings.TrimSpace(viper.GetString("target-domain"))
-			if target == "" {
-				target = domain
-			}
-
 			ips, err := internal.GetRecord(domain)
 			if err != nil {
 				panicRed(err)
 			}
 
 			for {
-				_, err = internal.GetCertificateOnTheProxy(ips, domain, target)
+				_, err = internal.GetCertificateOnTheProxy(ips, domain)
 				if err != nil {
 					panicRed(err)
 				}
@@ -46,10 +41,8 @@ var (
 
 func init() {
 	validateCommand.Flags().StringP("name", "n", "", "[required] Enter the origin domain that is used as a proxy server.")
-	validateCommand.Flags().StringP("target", "t", "", "[optional] The domain that sends the final response through the proxy.")
 
 	viper.BindPFlag("origin-domain", validateCommand.Flags().Lookup("name"))
-	viper.BindPFlag("target-domain", validateCommand.Flags().Lookup("target"))
 
 	rootCmd.AddCommand(validateCommand)
 }
