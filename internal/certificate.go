@@ -22,7 +22,6 @@ type Response struct {
 	certCommonName    string
 	certStartDate     string
 	certExpireDate    string
-	respStatus        string
 	respDate          string
 	respServer        string
 	respContentType   string
@@ -48,10 +47,6 @@ func (r Response) getCertStartDate() string {
 
 func (r Response) getCertExpireDate() string {
 	return r.certExpireDate
-}
-
-func (r Response) getRespStatus() string {
-	return r.respStatus
 }
 
 func (r Response) getRespDate() string {
@@ -181,9 +176,7 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 	if err != nil {
 		return nil, err
 	}
-
 	resp.Header.Add("Range", "bytes: 0-1")
-	res.respStatus = resp.Status
 
 	headerField := []string{"Date", "Server", "Content-Type", "Connection", "Cache-Control"}
 
@@ -205,15 +198,6 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 		}
 	}
 
-	statusCode := res.getRespStatus()[0:1]
-	if statusCode == "5" {
-		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiRedString(res.getRespStatus()))
-	} else if statusCode == "4" {
-		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiYellowString(res.getRespStatus()))
-	} else {
-		fmt.Printf("%s\t\t%s\n", color.HiBlackString("Status"), color.HiGreenString(res.getRespStatus()))
-	}
-
 	PrintFunc("Date", res.getRespDate())
 	PrintFunc("Server", res.getRespServer())
 	PrintFunc("Content-Type", res.getRespContentType())
@@ -226,7 +210,6 @@ func GetCertificateOnTheProxy(ips []net.IP, domain string, requestDomain string)
 		certCommonName:  res.certCommonName,
 		certStartDate:   res.certStartDate,
 		certExpireDate:  res.certExpireDate,
-		respStatus:      res.respStatus,
 		respDate:        res.respDate,
 		respServer:      res.respServer,
 		respContentType: res.respContentType,
@@ -263,6 +246,9 @@ func DistinguishCertificate(p *Pem, c *CertFile, pemBlockCount int) (string, err
 		if cert.Subject.String() == cert.Issuer.String() {
 			return "Root Certificate", nil
 		} else {
+			if cert.Subject.CommonName == "Sectigo RSA Domain Validation Secure Server CA" {
+				return "Root Certificate", nil
+			}
 			return "Intermediate Certificate", nil
 		}
 	}
