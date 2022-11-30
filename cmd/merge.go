@@ -30,7 +30,7 @@ var (
 			}
 			newFile := fmt.Sprintf("%s.pem", strings.TrimSpace(argName))
 
-			certFile, err = internal.Dir()
+			certFile, err = internal.DirGrepX509()
 			if err != nil {
 				panicRed(err)
 			}

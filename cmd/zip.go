@@ -29,7 +29,7 @@ var (
 			}
 			newFile := fmt.Sprintf("%s.zip", strings.TrimSpace(argName))
 
-			certFile, err = internal.Dir()
+			certFile, err = internal.DirGrepX509()
 			if err != nil {
 				panicRed(err)
 			}
@@ -44,16 +44,17 @@ var (
 			if err != nil {
 				panicRed(err)
 			}
-
 			zipw := zip.NewWriter(file)
 			defer zipw.Close()
 
-			for _, filename := range selectList {
-				if err := internal.AppendFile(filename, zipw); err != nil {
-					panicRed(err)
+			if len(selectList) > 0 {
+				for _, filename := range selectList {
+					if err := internal.AppendFile(filename, zipw); err != nil {
+						panicRed(err)
+					}
 				}
+				fmt.Printf(color.HiGreenString("📄 %s created successfully\n"), newFile)
 			}
-			fmt.Printf(color.HiGreenString("📄 %s created successfully\n"), newFile)
 		},
 	}
 )
