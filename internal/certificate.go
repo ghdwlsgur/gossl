@@ -21,30 +21,40 @@ type x509Certificate struct {
 	IssuerCommonName string
 	StartDate        string
 	ExpireDate       string
+	PubAlgorithm     string
+	SigAlgorithm     string
 }
 
 type Connection struct {
 	transport http.Transport
 }
 
-func (r x509Certificate) getSubject() pkix.Name {
-	return r.Subject
+func (c x509Certificate) getSubject() pkix.Name {
+	return c.Subject
 }
 
-func (r x509Certificate) getIssuerName() pkix.Name {
-	return r.IssuerName
+func (c x509Certificate) getIssuerName() pkix.Name {
+	return c.IssuerName
 }
 
-func (r x509Certificate) getIssuerCommonName() string {
-	return r.IssuerCommonName
+func (c x509Certificate) getIssuerCommonName() string {
+	return c.IssuerCommonName
 }
 
-func (r x509Certificate) getStartDate() string {
-	return r.StartDate
+func (c x509Certificate) getStartDate() string {
+	return c.StartDate
 }
 
-func (r x509Certificate) getExpireDate() string {
-	return r.ExpireDate
+func (c x509Certificate) getExpireDate() string {
+	return c.ExpireDate
+}
+
+func (c x509Certificate) getPubAlgorithm() string {
+	return c.PubAlgorithm
+}
+
+func (c x509Certificate) getSigAlgorithm() string {
+	return c.SigAlgorithm
 }
 
 func SetTransport(domainName, ip string) *Connection {
@@ -100,6 +110,8 @@ func getCertificationField(peerCertificates []*x509.Certificate, ip string) {
 				IssuerCommonName: cert.Issuer.CommonName,
 				StartDate:        cert.NotBefore.Format(formatDate),
 				ExpireDate:       cert.NotAfter.Format(formatDate),
+				PubAlgorithm:     cert.PublicKeyAlgorithm.String(),
+				SigAlgorithm:     cert.SignatureAlgorithm.String(),
 			}
 
 			h := fmt.Sprintf("%s", cert.VerifyHostname(""))
@@ -114,6 +126,8 @@ func getCertificationField(peerCertificates []*x509.Certificate, ip string) {
 
 			colorDays := expireDateCountToColor(x509C.getExpireDate())
 			PrintFunc("Expire Date", fmt.Sprintf("%s %s", color.HiGreenString(x509C.getExpireDate()), colorDays))
+			PrintFunc("PubAlgorithm", x509C.getPubAlgorithm())
+			PrintFunc("SigAlgorithm", x509C.getSigAlgorithm())
 		}
 	}
 }
