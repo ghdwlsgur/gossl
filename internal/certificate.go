@@ -177,18 +177,39 @@ func DistinguishCertificate(p *Pem, c *CertFile, pemBlockCount int) (string, err
 		if cert.Subject.String() == cert.Issuer.String() {
 			return "Root Certificate", nil
 		} else {
-			if cert.Subject.CommonName == "Sectigo RSA Domain Validation Secure Server CA" {
+
+			switch cert.Subject.CommonName {
+			case "Sectigo RSA Domain Validation Secure Server CA":
 				return "Root Certificate", nil
-			}
-			if cert.Subject.CommonName == "GoGetSSL RSA DV CA" {
+			case "GoGetSSL RSA DV CA":
 				return "Root Certificate", nil
 			}
 			return "Intermediate Certificate", nil
 		}
+	} else {
+
+		switch cert.Issuer.CommonName {
+		case "Thawte RSA CA 2018":
+			if pemBlockCount > 1 {
+				return "Unified Certificate (Leaf - Intermediate)", nil
+			}
+		case "AlphaSSL CA - SHA256 - G2":
+			if pemBlockCount > 1 {
+				return "Unified Certificate (Leaf - Intermediate)", nil
+			}
+		case "GeoTrust RSA CA 2018":
+			if pemBlockCount > 1 {
+				return "Unified Certificate (Leaf - Intermediate)", nil
+			}
+		case "RapidSSL RSA CA 2018":
+			if pemBlockCount > 1 {
+				return "Unified Certificate (Leaf - Intermediate)", nil
+			}
+		}
 	}
 
 	if pemBlockCount > 2 {
-		return "Unified Certificate", nil
+		return "Unified Certificate (Leaf - Intermediate - Root)", nil
 	}
 
 	return "Leaf Certificate", nil
