@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 	"strings"
 
 	"github.com/ghdwlsgur/gossl/internal"
@@ -25,17 +24,15 @@ var (
 				panicRed(fmt.Errorf("please enter your domain. ex) gossl connect -n naver.com"))
 			}
 
-			ips, err := internal.GetRecord(domain)
+			ips, err := internal.GetRecordIPv4(domain)
 			if err != nil {
 				panicRed(err)
 			}
 
 			for _, ip := range ips {
-				if net.ParseIP(ip.String()).To4() != nil {
-					err = internal.GetCertificateInfo(ip.String(), domain)
-					if err != nil {
-						panicRed(err)
-					}
+				err = internal.GetCertificateInfo(ip, domain)
+				if err != nil {
+					panicRed(err)
 				}
 			}
 		},
