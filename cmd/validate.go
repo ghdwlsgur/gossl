@@ -2,26 +2,31 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
+
+func setDomain(args []string) (string, error) {
+	if len(args) < 1 || args[0] == "" {
+		return "", fmt.Errorf("please enter your domain. ex) gossl validate naver.com")
+	}
+	return args[0], nil
+}
 
 var (
 	validateCommand = &cobra.Command{
 		Use:   "validate",
 		Short: "Proxy the A record ip address of the cache server to review the application of the certificate.",
 		Long:  "Proxy the A record ip address of the cache server to review the application of the certificate.",
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			var (
 				err error
 			)
 
-			domain := strings.TrimSpace(viper.GetString("origin-domain"))
-			if domain == "" {
-				panicRed(fmt.Errorf("please enter your domain. ex) gossl connect -n naver.com"))
+			domain, err := setDomain(args)
+			if err != nil {
+				panicRed(err)
 			}
 
 			ips, err := internal.GetRecordIPv4(domain)
@@ -40,9 +45,5 @@ var (
 )
 
 func init() {
-	validateCommand.Flags().StringP("name", "n", "", "[required] Enter the origin domain that is used as a proxy server.")
-
-	viper.BindPFlag("origin-domain", validateCommand.Flags().Lookup("name"))
-
 	rootCmd.AddCommand(validateCommand)
 }
