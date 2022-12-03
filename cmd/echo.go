@@ -90,7 +90,6 @@ var (
 				err      error
 			)
 
-			// Outputs a list of files with extensions ending in pem, crt, or key
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
 				panicRed(err)
