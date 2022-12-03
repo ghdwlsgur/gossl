@@ -29,19 +29,20 @@ This process results in a chain of trust. The final software can be trusted to h
 
 It would be possible to have the hardware check the suitability (signature) for every single piece of software. However, this would not produce the flexibility that a "chain" provides. In a chain, any given link can be replaced with a different version to provide different properties, without having to go all the way back to the trust anchor. This use of multiple layers is an application of a general technique to improve scalability, and is analogous to the use of multiple certificates in a certificate chain.
 
-# Why
+# Supported CAs
 
-It was inconvenient to memorize the file name by checking the type of file for the Certificate Chain of Trust and integrate the files in the order of leaf, intermediate, and root with the cat command.
+### `Leaf - Intermediate - Root`
 
-```bash
-cat leaf.crt intermediate.crt root.crt > new.pem
-```
+- Sectigo RSA Domain Validation Secure Server CA
+- GoGetSSL RSA DV CA
+- GlobalSign GCC R3 DV TLS CA 2020
 
-I had to check md5 every time by adding an option to the openssl command.
+### `Leaf - Intermediate`
 
-```bash
-echo | openssl x509 -in leaf.crt -modulus -noout
-```
+- Thawte RSA CA 2018
+- AlphaSSL CA - SHA256 - G2
+- GeoTrust RSA CA 2018
+- RapidSSL RSA CA 2018
 
 # Installation
 
@@ -73,117 +74,7 @@ brew upgrade gossl
 
 - `zip`: Compress the merged certificate file and rsa private key into a zip file.
 
-- `validate`: You get a response from the target domain by proxying it to the a record address of the domain you are using the https protocol.
-
-# How to use
-
-In the command, go to the folder path where the certificate is located.
-
-```bash
-pwd
-/Users/jinhyeokhong/playground/gossl-example-crt
-
-ls
-intermediate.crt
-leaf.crt
-root.crt
-rsa_private.key
-```
-
-## `echo`
-
-```bash
-gossl echo
-```
-
-<p align="center">
-<img src="https://user-images.githubusercontent.com/77400522/202838670-ce5fed38-bd4f-4800-bf0c-fe29197109bb.mov" width="680", height="550" />
-
-### Response Field
-
-> When selecting a certificate file, provide the fields below.
-
-if Type == CERTIFICATE {
-
-- pem.block
-- VerifyHostName
-- Issuer Name
-- Expire Date
-- Type: `CERTIFICATE` | `RSA PRIVATE KEY`
-- Detail: `LEAF` | `INTERMEDIATE` | `ROOT`
-- Md5 Hash
-
-}
-
-> If the selected file is an RSA PRIVATE KEY which is locked with a password, gossl is entered password from the user.
-
-if Type == RSA PRIVATE KEY {
-
-- pem.block
-- Type: `CERTIFICATE` | `RSA PRIVATE KEY`
-- Md5 Hash
-
-}
-
----
-
-## `merge`
-
-> If you select the certificate file to integrate regardless of type, the certificate files are integrated in the order of `leaf`, `intermediate`, and `root`.
-
-- A file with a certificate extension must exist in that location.
-- You must select at least two and no more than three.
-
-```bash
-# [output file name: gossl_merge_output.pem]
-gossl merge
-
-# [output file name: test.pem]
-gossl merge -n test
-```
-
-<p align="center">
-<img src="https://user-images.githubusercontent.com/77400522/202840001-74b38122-1164-40dd-a0e5-6153ceeea01c.mov" width="680", height="550" />
-</p>
-
-### `zip`
-
-```bash
-# [output file name: gossl_zip_output.zip]
-gossl zip
-
-# [output file name: test.zip]
-gossl zip -n test
-```
-
-<p align="center">
-<img src="https://user-images.githubusercontent.com/77400522/202840112-1b0b2054-8864-450a-af92-5e6799a2cd9e.mov" width="680", height="550" />
-</p>
-
-### `validate`
-
-> Used to verify the application of the certificate to the origin server.
-
-> The -n argument is called the origin domain, and the -t argument is called the target domain.
-
-> -n `argument`: `origin domain` / -t `argument`: `target domain`
-
-- If the target domain is omitted, the origin domain goes in as the target domain.
-- Get the response from the target domain by proxying the address of the origin domain's A record
-- The two commands below produce the same result.
-- For curl you have to manually enter the origin domain's a record, but gossl interactively provides an a record option.
-
-### gossl
-
-```bash
-gossl validate -n naver.com -t naver.com/include/themecast/targetAndPanels.json
-```
-
-### curl
-
-```bash
-curl -vo /dev/null -H 'Range:bytes=0-1' --resolve 'naver.com:443:223.130.195.95' 'https://www.naver.com/include/themecast/targetAndPanels.json'
-```
+- `validate`: Check the certificate information hanging on the domain.
 
 # License
 
