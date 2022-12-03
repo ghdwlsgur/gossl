@@ -15,7 +15,7 @@
 
 # Overview
 
-An Interactive CLI Tool that easily combines or validates https certificates(leaf, intermediate, root) and diagnoses whether certificates are applied with edge servers(a record address) as proxy.
+An Interactive CLI Tool that easily combines or validates https certificates.
 
 # Chain of trust
 
@@ -43,14 +43,6 @@ I had to check md5 every time by adding an option to the openssl command.
 echo | openssl x509 -in leaf.crt -modulus -noout
 ```
 
-I had to proxy to the origin domain's A record address to get a response from the target domain's content, as in the example below.
-
-```bash
-curl -vo /dev/null -H 'Range:bytes=0-1' --resolve 'naver.com:443:223. 130.195.95' 'https://www.naver.com/include/themecast/targetAndPanels.json'
-```
-
-Therefore, gossl is an interactive tool designed to conveniently use certificate integration by selecting and checking only the fields you want without using long commands.
-
 # Installation
 
 ### homebrew
@@ -71,7 +63,9 @@ brew upgrade gossl
 
 > Describe the workflow with gossl command arguments.
 
-### echo ➡️ merge ➡️ zip ➡️ validate ➡️ stat
+### unzip ➡️ echo ➡️ merge ➡️ zip ➡️ validate
+
+- `unzip`: Unzip the compressed file.
 
 - `echo`: Check the type of each certificate file and compare the md5 hash values.
 
@@ -80,8 +74,6 @@ brew upgrade gossl
 - `zip`: Compress the merged certificate file and rsa private key into a zip file.
 
 - `validate`: You get a response from the target domain by proxying it to the a record address of the domain you are using the https protocol.
-
-- `stat`: It is used to receive responses by fixing IPs of all A records in the target domain.
 
 # How to use
 
@@ -192,62 +184,6 @@ gossl validate -n naver.com -t naver.com/include/themecast/targetAndPanels.json
 ```bash
 curl -vo /dev/null -H 'Range:bytes=0-1' --resolve 'naver.com:443:223.130.195.95' 'https://www.naver.com/include/themecast/targetAndPanels.json'
 ```
-
-```bash
-# [default target: -n field]
-# below default target: naver.com
-# below command equals `gossl connect -n naver.com -t naver.com`
-gossl validate -n naver.com
-
-# [origin domain: naver.com]
-# [target domain: naver.com/include/themecast/targetAndPanels.json]
-gossl validate -n naver.com -t naver.com/include/themecast/targetAndPanels.json
-```
-
-![스크린샷 2022-11-20 오후 8 17 22](https://user-images.githubusercontent.com/77400522/202899103-02deec88-69b6-462c-be3a-85fad715a4cb.png)
-
-### `stat`
-
-> Receives the response of the url to each A record of the target domain to the url using the http or https protocol.
-
-> It is used to receive responses by fixing IPs of all A records in the target domain.
-
-- If the target url uses the `http` protocol, enter http as the first argument.
-  ```bash
-  gossl stat http -u [url] -t [target]
-  ```
-- If the target url uses the `https` protocol, enter https as the first argument.
-  ```bash
-  gossl stat https -u [url] -t [target]
-  ```
-- -u `url`: [required] This argument refers to the responding subject.
-- -t `target`: [required] Connect the url domain to the A record IP of the target domain. It can often be origin.
-- -H `host`: [optional] The value to put in the host directive of the request header.
-- -p `port`: [optional] When using the http protocol, it is used to fix another port number, and the default value is 80. Ignored when using https protocol.
-
-### gossl
-
-```bash
-gossl stat https -u naver.com -t naver.com -H naver.com
-```
-
-### curl
-
-```bash
- curl --http1.1 -k -D- -o /dev/null -H 'Host:naver.com' -H 'Range:bytes=0-1' --resolve 'naver.com:443:223.130.195.95' 'https://naver.com'
-```
-
-### Request
-
-```bash
-gossl stat https -u naver.com -t naver.com -H naver.com
-```
-
-### Response
-
-<p align="center">
-<img src="https://user-images.githubusercontent.com/77400522/202898682-e5c236b5-6772-41d6-86b2-cd9d5214b021.mov" width="680", height="550" />
-</p>
 
 # License
 
