@@ -3,6 +3,7 @@ package internal
 import (
 	"archive/zip"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -161,6 +162,11 @@ func UnZip(targetDirectory, newFileName string) error {
 		}
 
 		fileInArchive, err := f.Open()
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(dstFile, fileInArchive)
 		if err != nil {
 			return err
 		}
