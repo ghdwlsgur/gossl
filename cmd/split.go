@@ -23,19 +23,16 @@ func saveFileAsType(b []*pem.Block, typeName string) error {
 
 	fileName := fmt.Sprintf("gossl_%s.crt", typeName)
 	if len(b) > 0 {
+		newFile, err := createFile(fileName)
+		if err != nil {
+			return err
+		}
 		for _, block := range b {
-
-			newFile, err := createFile(fileName)
-			if err != nil {
-				return err
-			}
-
 			if err := pem.Encode(newFile, block); err != nil {
 				return err
 			}
 		}
-
-		fmt.Printf("📄 %s %s\n", color.HiMagentaString(fileName), color.HiGreenString("created successfully"))
+		fmt.Printf("📄 %s %s\n", color.HiGreenString(fileName), "created successfully")
 	}
 	return nil
 }
@@ -97,6 +94,8 @@ var (
 			intermediateBlock := []*pem.Block{}
 			rootBlock := []*pem.Block{}
 
+			fmt.Printf("%s\n", color.HiWhiteString("Certificate Type"))
+			fmt.Printf("✅ %s\n", file)
 			for {
 				var block *pem.Block
 				block, data = pem.Decode(data)
@@ -109,6 +108,8 @@ var (
 				if err != nil {
 					panicRed(err)
 				}
+
+				fmt.Printf("\t ➕ %s\n", color.HiWhiteString(detail))
 
 				switch strings.TrimSpace(strings.Split(detail, " ")[0]) {
 				case "Leaf":
@@ -124,6 +125,7 @@ var (
 				}
 			}
 
+			fmt.Printf("\n%s\n", color.HiWhiteString("Created Files"))
 			if saveFileAsType(leafBlock, "leaf"); err != nil {
 				panicRed(err)
 			}
