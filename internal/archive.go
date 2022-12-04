@@ -26,6 +26,7 @@ type ExtensionX509 struct {
 	typeC string
 	typeD string
 	typeE string
+	typeF string
 }
 
 type ExtensionZip struct {
@@ -101,20 +102,22 @@ func DirGrepX509() (*CertFile, error) {
 				typeC: "key",
 				typeD: "ca",
 				typeE: "csr",
+				typeF: "cer",
 			}
 
 			if extension == e.typeA ||
 				extension == e.typeB ||
 				extension == e.typeC ||
 				extension == e.typeD ||
-				extension == e.typeE {
+				extension == e.typeE ||
+				extension == e.typeF {
 				c.Name = append(c.Name, f.Name())
 			}
 		}
 	}
 
 	if c.getCertFileLength() == 0 {
-		return nil, fmt.Errorf("[pem, crt, key, ca, csr] extension files do not exist")
+		return nil, fmt.Errorf("[pem, crt, ca, csr, cer, key] extension files do not exist")
 	}
 
 	return c, nil
@@ -174,5 +177,24 @@ func UnZip(targetDirectory, newFileName string) error {
 		dstFile.Close()
 		fileInArchive.Close()
 	}
+	return nil
+}
+
+func AppendFile(fileName string, zipw *zip.Writer) error {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	wr, err := zipw.Create(fileName)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(wr, file); err != nil {
+		return err
+	}
+
 	return nil
 }
