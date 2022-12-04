@@ -182,14 +182,15 @@ func DistinguishCertificate(p *Pem, c *CertFile, pemBlockCount int) (string, err
 				return "Root Certificate", nil
 			}
 
+			result := fmt.Sprintf("%s [in %d block]", "Intermediate Certificate", pemBlockCount)
 			switch cert.Subject.CommonName {
 			case "Sectigo RSA Domain Validation Secure Server CA":
-				return "Intermediate Certificate", nil
+				return result, nil
 			case "GoGetSSL RSA DV CA":
-				return "Intermediate Certificate", nil
+				return result, nil
 			}
 
-			return "Intermediate Certificate", nil
+			return result, nil
 		}
 	} else {
 
