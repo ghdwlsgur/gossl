@@ -177,13 +177,13 @@ func DistinguishCertificate(p *Pem, c *CertFile, pemBlockCount int) (string, err
 		if cert.Subject.String() == cert.Issuer.String() {
 			return "Root Certificate", nil
 		} else {
-
 			switch cert.Subject.CommonName {
 			case "Sectigo RSA Domain Validation Secure Server CA":
-				return "Root Certificate", nil
+				return "Intermediate Certificate", nil
 			case "GoGetSSL RSA DV CA":
-				return "Root Certificate", nil
+				return "Intermediate Certificate", nil
 			}
+
 			return "Intermediate Certificate", nil
 		}
 	} else {
