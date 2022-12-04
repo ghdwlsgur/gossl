@@ -42,7 +42,7 @@ var (
 		Use:   "split",
 		Short: "Split Unified Certificate.",
 		Long:  "Split Unified Certificate.",
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			var (
 				certFile      *internal.CertFile
 				p             *internal.Pem
@@ -50,6 +50,12 @@ var (
 				selectList    []string
 				pemBlockCount int
 			)
+
+			if len(args) > 0 {
+				if args[0] != "show" || len(args) > 1 {
+					panicRed(fmt.Errorf("input format is incorrect. ex) gossl split show"))
+				}
+			}
 
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
@@ -68,6 +74,10 @@ var (
 					selectList = append(selectList, name)
 					certFile.Name = append(certFile.Name, certificateFileName)
 				}
+			}
+
+			if len(selectList) < 1 {
+				panicRed(fmt.Errorf("a certificate file with pem block length greater than 2 does not exist"))
 			}
 
 			selectFile, err := internal.AskSelect("Select Certificate File", selectList)
@@ -125,15 +135,17 @@ var (
 				}
 			}
 
-			fmt.Printf("\n%s\n", color.HiWhiteString("Created Files"))
-			if saveFileAsType(leafBlock, "leaf"); err != nil {
-				panicRed(err)
-			}
-			if saveFileAsType(intermediateBlock, "intermediate"); err != nil {
-				panicRed(err)
-			}
-			if saveFileAsType(rootBlock, "root"); err != nil {
-				panicRed(err)
+			if len(args) < 1 {
+				fmt.Printf("\n%s\n", color.HiWhiteString("Created Files"))
+				if saveFileAsType(leafBlock, "leaf"); err != nil {
+					panicRed(err)
+				}
+				if saveFileAsType(intermediateBlock, "intermediate"); err != nil {
+					panicRed(err)
+				}
+				if saveFileAsType(rootBlock, "root"); err != nil {
+					panicRed(err)
+				}
 			}
 
 		},
