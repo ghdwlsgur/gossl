@@ -17,8 +17,8 @@ func setDomain(args []string) (string, error) {
 var (
 	validateCommand = &cobra.Command{
 		Use:   "validate",
-		Short: "Proxy the A record ip address of the cache server to review the application of the certificate.",
-		Long:  "Proxy the A record ip address of the cache server to review the application of the certificate.",
+		Short: "Check the certificate information applied to the domain.",
+		Long:  "Check the certificate information applied to the domain.",
 		Run: func(_ *cobra.Command, args []string) {
 			var (
 				err error
