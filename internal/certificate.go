@@ -174,23 +174,24 @@ func DistinguishCertificate(p *Pem, c *CertFile, pemBlockCount int) (string, err
 	}
 
 	if cert.IsCA {
+		rootFormat := fmt.Sprintf("%s [in %d block]", "Root Certificate", pemBlockCount)
 		if cert.Subject.String() == cert.Issuer.String() {
-			return "Root Certificate", nil
+			return rootFormat, nil
 		} else {
 
 			if cert.Issuer.CommonName == "AAA Certificate Services" {
-				return "Root Certificate", nil
+				return rootFormat, nil
 			}
 
-			result := fmt.Sprintf("%s [in %d block]", "Intermediate Certificate", pemBlockCount)
+			intermediateFormat := fmt.Sprintf("%s [in %d block]", "Intermediate Certificate", pemBlockCount)
 			switch cert.Subject.CommonName {
 			case "Sectigo RSA Domain Validation Secure Server CA":
-				return result, nil
+				return intermediateFormat, nil
 			case "GoGetSSL RSA DV CA":
-				return result, nil
+				return intermediateFormat, nil
 			}
 
-			return result, nil
+			return intermediateFormat, nil
 		}
 	} else {
 
