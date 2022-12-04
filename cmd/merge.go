@@ -94,11 +94,12 @@ var (
 						break
 					}
 
-					if detail == "Leaf Certificate" {
+					typeOfCertificate := strings.TrimSpace(strings.Split(detail, " ")[0])
+					if typeOfCertificate == "Leaf" {
 						leafBlock = append(leafBlock, block)
-					} else if detail == "Intermediate Certificate" {
+					} else if typeOfCertificate == "Intermediate" {
 						intermediateBlock = append(intermediateBlock, block)
-					} else if detail == "Root Certificate" {
+					} else if typeOfCertificate == "Root" {
 						rootBlock = append(rootBlock, block)
 					}
 
