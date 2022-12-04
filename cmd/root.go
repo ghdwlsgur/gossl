@@ -11,8 +11,8 @@ import (
 var (
 	rootCmd = &cobra.Command{
 		Use:   "gossl",
-		Short: `gossl is an interactive CLI that compares certificate file types and md5 hash, or curls results from the origin domain's name servers to the target domain.`,
-		Long:  `gossl is an interactive CLI that compares certificate file types and md5 hash, or curls results from the origin domain's name servers to the target domain.`,
+		Short: `gossl is an interactive tool that allows you to integrate certificates, look up certificates and private keys, split integrated certificate files by root, intermediate, and leaf certificates, or view certificate information applied to a domain by A record. We will update the certificate format that changes for each ca.`,
+		Long:  `gossl is an interactive tool that allows you to integrate certificates, look up certificates and private keys, split integrated certificate files by root, intermediate, and leaf certificates, or view certificate information applied to a domain by A record. We will update the certificate format that changes for each ca.`,
 	}
 )
 
