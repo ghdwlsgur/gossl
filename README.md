@@ -64,17 +64,87 @@ brew upgrade gossl
 
 > Describe the workflow with gossl command arguments.
 
-### unzip ➡️ echo ➡️ merge ➡️ zip ➡️ validate
+### unzip ➡️ echo ➡️ merge ➡️ split ➡️ zip ➡️ validate
 
 - `unzip`: Unzip the compressed file.
 
-- `echo`: Check the type of each certificate file and compare the md5 hash values.
+- `echo`: Check the type of each certificate file and compare the md5 hash values. If the target file is an ecc private key, it is not supported. Also, if it is a private key, it can be converted to an rsa private key.
 
 - `merge`: Combine the verified certificate files in the order of leaf, intermediate, and root.
+
+- `split`: When there is an integrated certificate that combines root certificate, intermediate certificate, and domain certificate, the type of each block in the integrated certificate is verified and files are created for each block type.
 
 - `zip`: Compress the merged certificate file and rsa private key into a zip file.
 
 - `validate`: Check the certificate information hanging on the domain.
+
+# How to use
+
+### `unzip`
+
+```bash
+gossl unzip -n [fileName]
+```
+
+<div align="center">
+<img src="https://user-images.githubusercontent.com/77400522/205485682-226ba402-692a-4304-88d3-8d87310ad90e.png">
+<img src="https://user-images.githubusercontent.com/77400522/205485685-f165eef7-da8c-47d6-a733-ab6725437c8b.png">
+</div>
+
+### `echo`
+
+```bash
+gossl echo
+```
+
+<div align="center">
+<img src="https://user-images.githubusercontent.com/77400522/205485947-d2ed8bb1-9b40-4add-aa18-ffb803e96db7.png">
+<img src="https://user-images.githubusercontent.com/77400522/205485948-874dd6d0-f114-4309-983d-f1c38750a5ea.png">
+</div>
+
+### `merge`
+
+```bash
+gossl merge -n [fileName]
+```
+
+<div align="center">
+<img src="https://user-images.githubusercontent.com/77400522/205485834-4eb17caf-3e34-47ff-a73f-1364a1b67049.png">
+<img src="https://user-images.githubusercontent.com/77400522/205485835-766ee3c3-727b-489a-aefe-2ca81ae53cc3.png">
+</div>
+
+### `split`
+
+```bash
+gossl split # make file
+gossl split show # not make file
+```
+
+<div align="center">
+<img src="https://user-images.githubusercontent.com/77400522/205486021-b1677395-ec89-487b-ae60-f7f5bdfd998e.png">
+<img src="https://user-images.githubusercontent.com/77400522/205486020-7c674c92-7ef6-441e-bbad-f0c6a8459e68.png">
+</div>
+
+### `zip`
+
+```bash
+gossl zip -n [fileName]
+```
+
+<div align="center">
+<img src="https://user-images.githubusercontent.com/77400522/205486258-550e58ba-94b8-42a1-8f4d-421e46e8aa7b.png">
+<img src="https://user-images.githubusercontent.com/77400522/205486262-4331d819-17ea-4a22-aaef-3c093543859a.png">
+</div>
+
+### `validate`
+
+```bash
+gossl validate -n [domain]
+```
+
+<div align="center">
+<img src="https://user-images.githubusercontent.com/77400522/205486339-a6d35942-a160-4553-8976-38a072f04436.png">
+</div>
 
 # License
 
