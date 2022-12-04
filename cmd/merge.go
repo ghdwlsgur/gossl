@@ -78,7 +78,8 @@ var (
 					panicRed(err)
 				}
 
-				if detail == "Unified Certificate" {
+				typeOfCertificate := strings.TrimSpace(strings.Split(detail, " ")[0])
+				if typeOfCertificate == "Unified" {
 					panicRed(fmt.Errorf("%s is already merged certificate file, please choose another file", selectCert))
 				}
 
@@ -94,7 +95,6 @@ var (
 						break
 					}
 
-					typeOfCertificate := strings.TrimSpace(strings.Split(detail, " ")[0])
 					if typeOfCertificate == "Leaf" {
 						leafBlock = append(leafBlock, block)
 					} else if typeOfCertificate == "Intermediate" {
