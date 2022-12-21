@@ -41,8 +41,8 @@ var (
 			}
 
 			n := len(selectList)
-			if n > 3 {
-				panicRed(fmt.Errorf("please select up to 3"))
+			if n > 4 {
+				panicRed(fmt.Errorf("please select up to 4"))
 			}
 
 			if n < 2 {
