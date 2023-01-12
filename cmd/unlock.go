@@ -44,7 +44,6 @@ var (
 			block := p.Block
 			isEncrypted := x509.IsEncryptedPEMBlock(block)
 
-			fmt.Println("check4")
 			if isEncrypted {
 				password, err := internal.AskInput("What is your password", 1)
 				if err != nil {
