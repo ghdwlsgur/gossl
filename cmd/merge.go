@@ -58,6 +58,9 @@ var (
 			leafBlock := []*pem.Block{}
 			intermediateBlock := []*pem.Block{}
 			rootBlock := []*pem.Block{}
+			privateBlock := []*pem.Block{}
+
+			flagF := viper.GetBool("add-private-key")
 
 			for _, selectCert := range selectList {
 				internal.SetCertExtension(certFile, selectCert)
@@ -67,52 +70,63 @@ var (
 					panicRed(err)
 				}
 
+				if !flagF {
+					b, _ := pem.Decode(data)
+					if b.Type == "RSA PRIVATE KEY" {
+						panicRed(fmt.Errorf("please select only the certificate file"))
+					}
+				} else {
+					b, _ := pem.Decode(data)
+					if b.Type == "RSA PRIVATE KEY" {
+						privateBlock = append(privateBlock, b)
+					}
+				}
+
 				p, err = internal.GetPemType(selectCert)
 				if err != nil {
 					panicRed(err)
 				}
 
 				pemBlockCount := internal.CountPemBlock(data)
-				detail, err := internal.DistinguishCertificate(p, certFile, pemBlockCount)
-				if err != nil {
-					panicRed(err)
-				}
 
-				typeOfCertificate := strings.TrimSpace(strings.Split(detail, " ")[0])
-				if typeOfCertificate == "Unified" {
-					panicRed(fmt.Errorf("%s is already merged certificate file, please choose another file", selectCert))
-				}
-
-				b, _ := pem.Decode(data)
-				if b.Type == "RSA PRIVATE KEY" {
-					panicRed(fmt.Errorf("please select only the certificate file"))
-				}
-
-				for {
-					var block *pem.Block
-					block, data = pem.Decode(data)
-					if block == nil {
-						break
+				if p.Type != "RSA PRIVATE KEY" {
+					detail, err := internal.DistinguishCertificate(p, certFile, pemBlockCount)
+					if err != nil {
+						panicRed(err)
 					}
 
-					if typeOfCertificate == "Leaf" {
-						leafBlock = append(leafBlock, block)
-					} else if typeOfCertificate == "Intermediate" {
-						intermediateBlock = append(intermediateBlock, block)
-					} else if typeOfCertificate == "Root" {
-						rootBlock = append(rootBlock, block)
+					typeOfCertificate := strings.TrimSpace(strings.Split(detail, " ")[0])
+					if typeOfCertificate == "Unified" {
+						panicRed(fmt.Errorf("%s is already merged certificate file, please choose another file", selectCert))
 					}
 
-					if len(data) == 0 {
-						break
+					for {
+						var block *pem.Block
+						block, data = pem.Decode(data)
+						if block == nil {
+							break
+						}
+
+						if typeOfCertificate == "Leaf" {
+							leafBlock = append(leafBlock, block)
+						} else if typeOfCertificate == "Intermediate" {
+							intermediateBlock = append(intermediateBlock, block)
+						} else if typeOfCertificate == "Root" {
+							rootBlock = append(rootBlock, block)
+						}
+
+						if len(data) == 0 {
+							break
+						}
 					}
 				}
 			}
 
-			blockBucket := make([][]*pem.Block, 3)
+			blockBucket := make([][]*pem.Block, 4)
 			blockBucket[0] = leafBlock
 			blockBucket[1] = intermediateBlock
 			blockBucket[2] = rootBlock
+			blockBucket[3] = privateBlock
 
 			for i := 0; i < len(blockBucket); i++ {
 				for _, block := range blockBucket[i] {
@@ -128,8 +142,10 @@ var (
 
 func init() {
 	mergeCommand.Flags().StringP("name", "n", "", "[optional] Enter the file name to create.")
+	mergeCommand.Flags().BoolP("force", "f", false, "[optional] merge key file and certificate file")
 
 	viper.BindPFlag("pem-file-name", mergeCommand.Flags().Lookup("name"))
+	viper.BindPFlag("add-private-key", mergeCommand.Flags().Lookup("force"))
 
 	rootCmd.AddCommand(mergeCommand)
 }
