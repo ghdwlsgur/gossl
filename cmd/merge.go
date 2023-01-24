@@ -61,7 +61,6 @@ var (
 			privateBlock := []*pem.Block{}
 
 			flagF := viper.GetBool("add-private-key")
-			fmt.Println(flagF)
 
 			for _, selectCert := range selectList {
 				internal.SetCertExtension(certFile, selectCert)
