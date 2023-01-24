@@ -61,6 +61,7 @@ var (
 			privateBlock := []*pem.Block{}
 
 			flagF := viper.GetBool("add-private-key")
+			fmt.Println(flagF)
 
 			for _, selectCert := range selectList {
 				internal.SetCertExtension(certFile, selectCert)
@@ -71,14 +72,20 @@ var (
 				}
 
 				if !flagF {
-					b, _ := pem.Decode(data)
-					if b.Type == "RSA PRIVATE KEY" {
-						panicRed(fmt.Errorf("please select only the certificate file"))
+					if b, _ := pem.Decode(data); b != nil {
+						if b.Type == "RSA PRIVATE KEY" {
+							panicRed(fmt.Errorf("please select only the certificate file"))
+						}
+					} else {
+						panicRed(fmt.Errorf("%s is empty", selectCert))
 					}
 				} else {
-					b, _ := pem.Decode(data)
-					if b.Type == "RSA PRIVATE KEY" {
-						privateBlock = append(privateBlock, b)
+					if b, _ := pem.Decode(data); b != nil {
+						if b.Type == "RSA PRIVATE KEY" {
+							privateBlock = append(privateBlock, b)
+						}
+					} else {
+						panicRed(fmt.Errorf("%s is empty", selectCert))
 					}
 				}
 
