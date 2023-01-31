@@ -1,6 +1,9 @@
 package internal
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 func GetRecordIPv4(domainName string) ([]string, error) {
 
@@ -17,4 +20,13 @@ func GetRecordIPv4(domainName string) ([]string, error) {
 	}
 
 	return ipList, nil
+}
+
+func GetHost(domainName string) error {
+	_, err := net.LookupHost(domainName)
+	if err != nil {
+		return fmt.Errorf("host is not assigned this domain")
+	}
+
+	return nil
 }

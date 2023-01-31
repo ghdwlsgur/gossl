@@ -29,6 +29,11 @@ var (
 				panicRed(err)
 			}
 
+			checkHostErr := internal.GetHost(domain)
+			if checkHostErr != nil {
+				panicRed(checkHostErr)
+			}
+
 			ips, err := internal.GetRecordIPv4(domain)
 			if err != nil {
 				panicRed(err)
