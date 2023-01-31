@@ -19,18 +19,34 @@ func createFile(fileName string) (*os.File, error) {
 	return file, nil
 }
 
-func saveFileAsType(b []*pem.Block, typeName string) error {
+func saveFile(b []*pem.Block, typeName string, blockCount int) error {
 
-	fileName := fmt.Sprintf("gossl_%s.crt", typeName)
+	for blockCount >= 1 {
+		err := saveFileAsType(b, typeName, blockCount)
+		if err != nil {
+			return err
+		}
+		blockCount--
+	}
+	return nil
+}
+
+func saveFileAsType(b []*pem.Block, typeName string, blockCount int) error {
+
+	fileName := fmt.Sprintf("gossl_%s_%d.crt", typeName, blockCount)
 	if len(b) > 0 {
 		newFile, err := createFile(fileName)
 		if err != nil {
 			return err
 		}
-		for _, block := range b {
-			if err := pem.Encode(newFile, block); err != nil {
-				return err
-			}
+		// ephemeral code 삭제 대기
+		// for _, block := range b {
+		// 	if err := pem.Encode(newFile, block); err != nil {
+		// 		return err
+		// 	}
+		// }
+		if err := pem.Encode(newFile, b[blockCount-1]); err != nil {
+			return err
 		}
 		fmt.Printf("📄 %s %s\n", color.HiGreenString(fileName), "created successfully")
 	}
@@ -44,11 +60,14 @@ var (
 		Long:  "Split Unified Certificate.",
 		Run: func(_ *cobra.Command, args []string) {
 			var (
-				certFile      *internal.CertFile
-				p             *internal.Pem
-				err           error
-				selectList    []string
-				pemBlockCount int
+				certFile               *internal.CertFile
+				p                      *internal.Pem
+				err                    error
+				selectList             []string
+				pemBlockCount          int
+				leafBlockCount         int
+				intermediateBlockCount int
+				rootBlockCount         int
 			)
 
 			if len(args) > 0 {
@@ -106,6 +125,7 @@ var (
 
 			fmt.Printf("%s\n", color.HiWhiteString("Certificate Type"))
 			fmt.Printf("✅ %s\n", file)
+
 			for {
 				var block *pem.Block
 				block, data = pem.Decode(data)
@@ -124,10 +144,13 @@ var (
 				switch strings.TrimSpace(strings.Split(detail, " ")[0]) {
 				case "Leaf":
 					leafBlock = append(leafBlock, block)
+					leafBlockCount++
 				case "Intermediate":
 					intermediateBlock = append(intermediateBlock, block)
+					intermediateBlockCount++
 				case "Root":
 					rootBlock = append(rootBlock, block)
+					rootBlockCount++
 				}
 
 				if len(data) == 0 {
@@ -137,13 +160,13 @@ var (
 
 			if len(args) < 1 {
 				fmt.Printf("\n%s\n", color.HiWhiteString("Created Files"))
-				if saveFileAsType(leafBlock, "leaf"); err != nil {
+				if saveFile(leafBlock, "leaf", leafBlockCount); err != nil {
 					panicRed(err)
 				}
-				if saveFileAsType(intermediateBlock, "intermediate"); err != nil {
+				if saveFile(intermediateBlock, "intermediate", intermediateBlockCount); err != nil {
 					panicRed(err)
 				}
-				if saveFileAsType(rootBlock, "root"); err != nil {
+				if saveFile(rootBlock, "root", rootBlockCount); err != nil {
 					panicRed(err)
 				}
 			}
