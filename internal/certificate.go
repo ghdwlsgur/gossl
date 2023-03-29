@@ -100,6 +100,17 @@ func expireDateCountToColor(expireDate string) string {
 	return color.HiGreenString(fmt.Sprintf("[%v days]", days))
 }
 
+// func test(peerCertificates []*x509.Certificate, ip string) {
+// 	fmt.Println(len(peerCertificates))
+// 	// var certBytes [][]byte
+// 	for _, cert := range peerCertificates[0:1] {
+// 		// certByte := cert.Raw
+// 		// certBytes = append(certBytes, certByte)
+// 		c, _ := x509.ParseCertificate(cert.Raw)
+// 		fmt.Println(c.Issuer)
+// 	}
+// }
+
 func getCertificationField(peerCertificates []*x509.Certificate, ip string) {
 	for _, cert := range peerCertificates {
 		if len(cert.DNSNames) > 0 {
