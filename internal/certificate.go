@@ -100,45 +100,56 @@ func expireDateCountToColor(expireDate string) string {
 	return color.HiGreenString(fmt.Sprintf("[%v days]", days))
 }
 
-// func test(peerCertificates []*x509.Certificate, ip string) {
-// 	fmt.Println(len(peerCertificates))
-// 	// var certBytes [][]byte
-// 	for _, cert := range peerCertificates[0:1] {
-// 		// certByte := cert.Raw
-// 		// certBytes = append(certBytes, certByte)
-// 		c, _ := x509.ParseCertificate(cert.Raw)
-// 		fmt.Println(c.Issuer)
-// 	}
-// }
+func GetCertificate(domain, ip string) error {
+	c := SetTransport(domain, ip)
+	transport := c.transport
+
+	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:443", domain), transport.TLSClientConfig)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	for _, cert := range conn.ConnectionState().PeerCertificates {
+		fmt.Printf("\n[ %s ]\n", color.HiWhiteString(DistinguishCertificateWithConnection(cert)))
+		printCertifiacetInfo(cert)
+	}
+
+	return nil
+}
+
+func printCertifiacetInfo(cert *x509.Certificate) {
+	formatDate := "2006-01-02"
+	x509C := &x509Certificate{
+		Subject:          cert.Subject,
+		IssuerName:       cert.Issuer,
+		IssuerCommonName: cert.Issuer.CommonName,
+		StartDate:        cert.NotBefore.Format(formatDate),
+		ExpireDate:       cert.NotAfter.Format(formatDate),
+		PubAlgorithm:     cert.PublicKeyAlgorithm.String(),
+		SigAlgorithm:     cert.SignatureAlgorithm.String(),
+	}
+	h := fmt.Sprintf("%s", cert.VerifyHostname(""))
+	hl := strings.Split(h, ",")
+
+	PrintFunc("Verify Host", strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
+	PrintSplitFunc("Subject", x509C.getSubject().String())
+	PrintSplitFunc("Issuer Name", x509C.getIssuerName().String())
+	PrintFunc("Common Name", x509C.getIssuerCommonName())
+	PrintFunc("Start Date", x509C.getStartDate())
+
+	colorDays := expireDateCountToColor(x509C.getExpireDate())
+	PrintFunc("Expire Date", fmt.Sprintf("%s %s", color.HiGreenString(x509C.getExpireDate()), colorDays))
+	PrintFunc("PubAlgorithm", x509C.getPubAlgorithm())
+	PrintFunc("SigAlgorithm", x509C.getSigAlgorithm())
+}
 
 func getCertificationField(peerCertificates []*x509.Certificate, ip string) {
+	fmt.Printf("\n%s [%s]\n", color.HiWhiteString("Certificate"), color.HiYellowString(ip))
+
 	for _, cert := range peerCertificates {
 		if len(cert.DNSNames) > 0 {
-			formatDate := "2006-01-02"
-			x509C := &x509Certificate{
-				Subject:          cert.Subject,
-				IssuerName:       cert.Issuer,
-				IssuerCommonName: cert.Issuer.CommonName,
-				StartDate:        cert.NotBefore.Format(formatDate),
-				ExpireDate:       cert.NotAfter.Format(formatDate),
-				PubAlgorithm:     cert.PublicKeyAlgorithm.String(),
-				SigAlgorithm:     cert.SignatureAlgorithm.String(),
-			}
-
-			h := fmt.Sprintf("%s", cert.VerifyHostname(""))
-			hl := strings.Split(h, ",")
-
-			fmt.Printf("\n%s [%s]\n", color.HiWhiteString("Certificate"), color.HiYellowString(ip))
-			PrintFunc("Verify Host", strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
-			PrintSplitFunc("Subject", x509C.getSubject().String())
-			PrintSplitFunc("Issuer Name", x509C.getIssuerName().String())
-			PrintFunc("Common Name", x509C.getIssuerCommonName())
-			PrintFunc("Start Date", x509C.getStartDate())
-
-			colorDays := expireDateCountToColor(x509C.getExpireDate())
-			PrintFunc("Expire Date", fmt.Sprintf("%s %s", color.HiGreenString(x509C.getExpireDate()), colorDays))
-			PrintFunc("PubAlgorithm", x509C.getPubAlgorithm())
-			PrintFunc("SigAlgorithm", x509C.getSigAlgorithm())
+			printCertifiacetInfo(cert)
 		}
 	}
 }
@@ -175,6 +186,25 @@ func CountPemBlock(bytes []byte) int {
 			return pemBlockCount
 		}
 	}
+}
+
+func DistinguishCertificateWithConnection(cert *x509.Certificate) string {
+	if len(cert.DNSNames) > 0 {
+		return "Leaf Certificate"
+	}
+
+	if cert.IsCA {
+		if cert.Subject.String() == cert.Issuer.String() {
+			return "Root Certificate"
+		} else {
+			if caRootCondition(cert.Subject.CommonName) {
+				return "Root Certificate"
+			}
+			return "Intermediate Certificate"
+		}
+	}
+
+	return ""
 }
 
 func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, error) {
