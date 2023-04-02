@@ -9,10 +9,13 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
+	"gopkg.in/yaml.v3"
 )
 
 type x509Certificate struct {
@@ -27,6 +30,15 @@ type x509Certificate struct {
 
 type Connection struct {
 	transport http.Transport
+}
+
+type RootYaml struct {
+	Root YamlData `yaml:"root"`
+}
+
+type YamlData struct {
+	LastModified int
+	Metadata     []string
 }
 
 func (c x509Certificate) getSubject() pkix.Name {
@@ -197,7 +209,8 @@ func DistinguishCertificateWithConnection(cert *x509.Certificate) string {
 		if cert.Subject.String() == cert.Issuer.String() {
 			return "Root Certificate"
 		} else {
-			if caRootCondition(cert.Subject.CommonName) {
+			result, err := caRootCondition(cert.Subject.CommonName)
+			if result && err != nil {
 				return "Root Certificate"
 			}
 			return "Intermediate Certificate"
@@ -220,7 +233,8 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 			return rootFormat, nil
 		} else {
 
-			if caRootCondition(cert.Subject.CommonName) {
+			result, err := caRootCondition(cert.Subject.CommonName)
+			if result && err != nil {
 				return rootFormat, nil
 			}
 
@@ -241,170 +255,25 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 	return leafFormat, nil
 }
 
-// https://www.digicert.com/kb/digicert-root-certificates.htm
-func caRootCondition(cn string) bool {
-	var result = false
+func caRootCondition(cn string) (bool, error) {
+	var r RootYaml
 
-	// DigiCert
-	// https://knowledge.digicert.com/generalinformation/digicert-root-and-intermediate-ca-certificate-updates-2023.html
-	switch cn {
-	case "Baltimore CyberTrust Root": // distrust date: April 15, 2025
-		result = true
-	case "Cybertrust Global Root":
-		result = true
-	case "DigiCert Assured ID Root G2":
-		result = true
-	case "DigiCert Assured ID Root G3":
-		result = true
-	case "DigiCert Federated ID Root CA":
-		result = true
-	case "DigiCert Global Root G3":
-		result = true
-	case "DigiCert Private Services Root":
-		result = true
-	case "DigiCert Trusted Root G4":
-		result = true
-	case "GTE CyberTrust Global Root":
-		result = true
-	case "Verizon Global Root CA":
-		result = true
-	case "GeoTrust Primary Certification Authority":
-		result = true
-	case "GeoTrust Primary Certification Authority - G2":
-		result = true
-	case "GeoTrust Primary Certification Authority - G3":
-		result = true
-	case "DigiCert Assured ID Root CA": // distrust date: April 15, 2026
-		result = true
-	case "DigiCert Global Root CA": // distrust date: April 15, 2026
-		result = true
-	case "DigiCert High Assurance EV Root CA": // distrust date: April 15, 2026
-		result = true
-	case "DigiCert Global Root G2": // distrust date: April 15, 2029
-		result = true
-	case "DigiCert TLS RSA4096 Root G5": // distrust date: Jan 15, 2036
-		result = true
-	case "DigiCert TLS ECC P384 Root G5":
-		result = true
-	case "DigiCert CS ECC P384 Root G5":
-		result = true
-	case "DigiCert CS RSA4096 Root G5":
-		result = true
-	case "DigiCert Client ECC P384 Root G5":
-		result = true
-	case "DigiCert Client RSA4096 Root G5":
-		result = true
-	case "DigiCert SMIME ECC P384 Root G5":
-		result = true
-	case "DigiCert SMIME RSA4096 Root G5":
-		result = true
-	case "DigiCert ECC P384 Root G5":
-		result = true
-	case "DigiCert RSA4096 Root G5":
-		result = true
-	case "DigiCert EV RSA CA G2":
-		result = true
-	case "Symantec Class 3 Public Primary Certification Authority - G4":
-		result = true
-	case "Symantec Class 3 Public Primary Certification Authority - G6":
-		result = true
+	filename, _ := filepath.Abs("../config/rootSSL.yaml")
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return false, err
 	}
 
-	// Sectigo
-	// https://sectigo.com/resource-library/sectigo-root-intermediate-certificate-files
-	// https://secure.sectigo.com/products/publiclyDisclosedSubCACerts
-	switch cn {
-	case "AAA Certificate Services":
-		result = true
-	case "Comodo Certification Authority":
-		result = true
-	case "COMODO ECC Certification Authority":
-		result = true
-	case "COMODO RSA Certification Authority":
-		result = true
-	case "Secure Certificate Services":
-		result = true
-	case "Trusted Certificate Services":
-		result = true
-	case "USERTrust RSA Certification Authority":
-		result = true
-	case "AddTrust Class 1 CA Root":
-		result = true
-	case "AddTrust External CA Root":
-		result = true
-	case "AddTrust Public CA Root":
-		result = true
-	case "AddTrust Qualified CA Root":
-		result = true
-	case "USERTrust ECC Certification Authority":
-		result = true
+	err = yaml.Unmarshal(data, &r)
+	if err != nil {
+		return false, err
 	}
 
-	// Thawte
-	// https://www.thawte.com/roots/
-	switch cn {
-	case "Thawte Primary Root CA": // distrust date: Jul 16, 2036
-		result = true
-	case "Thawte Primary Root CA - G2": // distrust date: Jan 18, 2038
-		result = true
-	case "Thawte Primary Root CA - G3": // distrust date: Dec 1, 2037
-		result = true
-	case "Thawte Primary Root CA - G4": // distrust date: Dec 1, 2037
-		result = true
+	for _, v := range r.Root.Metadata {
+		if cn == v {
+			return true, nil
+		}
 	}
 
-	// GlobalSign
-	// https://support.globalsign.com/ca-certificates/root-certificates/globalsign-root-certificates
-	switch cn {
-	case "GlobalSign Root R1":
-		result = true
-	case "GlobalSign Root R3":
-		result = true
-	case "GlobalSign Root R6":
-		result = true
-	case "GlobalSign Root R46":
-		result = true
-	case "GlobalSign ECC Root R5":
-		result = true
-	case "GlobalSign Root E46":
-		result = true
-	case "GlobalSign Client Authentication Root E45":
-		result = true
-	case "GlobalSign Client Authentication Root R45":
-		result = true
-	case "GlobalSign Code Signing Root E45":
-		result = true
-	case "GlobalSign Code Signing Root R45":
-		result = true
-	case "GlobalSign Document Signing Root E45":
-		result = true
-	case "GlobalSign Document Signing Root R45":
-		result = true
-	case "GlobalSign IoT Root E60":
-		result = true
-	case "GlobalSign IoT Root R60":
-		result = true
-	case "GlobalSign Secure Mail Root E45":
-		result = true
-	case "GlobalSign Secure Mail Root R45":
-		result = true
-	case "GlobalSign Timestamping Root R45":
-		result = true
-	case "GlobalSign Timestamping Root E46":
-		result = true
-	}
-
-	// VeriSign
-	switch cn {
-	case "VeriSign Class 3 Public Primary Certification Authority - G3":
-		result = true
-	case "VeriSign Class 3 Public Primary Certification Authority - G4":
-		result = true
-	case "VeriSign Class 3 Public Primary Certification Authority - G5":
-		result = true
-	case "VeriSign Universal Root Certification Authority":
-		result = true
-	}
-
-	return result
+	return false, nil
 }
