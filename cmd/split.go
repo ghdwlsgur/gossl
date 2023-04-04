@@ -39,12 +39,6 @@ func saveFileAsType(b []*pem.Block, typeName string, blockCount int) error {
 		if err != nil {
 			return err
 		}
-		// ephemeral code 삭제 대기
-		// for _, block := range b {
-		// 	if err := pem.Encode(newFile, block); err != nil {
-		// 		return err
-		// 	}
-		// }
 		if err := pem.Encode(newFile, b[blockCount-1]); err != nil {
 			return err
 		}
