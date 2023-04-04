@@ -156,7 +156,7 @@ func printCertifiacetInfo(cert *x509.Certificate) {
 	PrintFunc("SigAlgorithm", x509C.getSigAlgorithm())
 }
 
-func getCertificationField(peerCertificates []*x509.Certificate, ip string) {
+func getLeafCertification(peerCertificates []*x509.Certificate, ip string) {
 	fmt.Printf("\n%s [%s]\n", color.HiWhiteString("Certificate"), color.HiYellowString(ip))
 
 	for _, cert := range peerCertificates {
@@ -177,7 +177,7 @@ func GetCertificateInfo(ip string, domain string) error {
 	}
 	defer conn.Close()
 
-	getCertificationField(conn.ConnectionState().PeerCertificates, ip)
+	getLeafCertification(conn.ConnectionState().PeerCertificates, ip)
 
 	return nil
 }
