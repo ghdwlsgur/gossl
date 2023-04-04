@@ -1,71 +1,141 @@
 root:
   lastModified: 20230331
   metadata:
-    - Baltimore CyberTrust Root
-    - Cybertrust Global Root
-    - DigiCert Assured ID Root G2
-    - DigiCert Assured ID Root G3
-    - DigiCert Federated ID Root CA
-    - DigiCert Global Root G3
-    - DigiCert Private Services Root
-    - DigiCert Trusted Root G4
-    - GTE CyberTrust Global Root
-    - Verizon Global Root CA
-    - GeoTrust Primary Certification Authority
-    - GeoTrust Primary Certification Authority - G2
-    - GeoTrust Primary Certification Authority - G3
-    - DigiCert Assured ID Root CA
-    - DigiCert Global Root CA
-    - DigiCert High Assurance EV Root CA
-    - DigiCert Global Root G2
-    - DigiCert TLS RSA4096 Root G5
-    - DigiCert TLS ECC P384 Root G5
-    - DigiCert CS ECC P384 Root G5
-    - DigiCert CS RSA4096 Root G5
-    - DigiCert Client ECC P384 Root G5
-    - DigiCert Client RSA4096 Root G5
-    - DigiCert SMIME ECC P384 Root G5
-    - DigiCert SMIME RSA4096 Root G5
-    - DigiCert ECC P384 Root G5
-    - DigiCert RSA4096 Root G5
-    - DigiCert EV RSA CA G2
-    - Symantec Class 3 Public Primary Certification Authority - G4
-    - Symantec Class 3 Public Primary Certification Authority - G6
-    - AAA Certificate Services
-    - Comodo Certification Authority
-    - COMODO ECC Certification Authority
-    - COMODO RSA Certification Authority
-    - Secure Certificate Services
-    - Trusted Certificate Services
-    - USERTrust RSA Certification Authority
-    - AddTrust Class 1 CA Root
-    - AddTrust External CA Root
-    - AddTrust Public CA Root
-    - AddTrust Qualified CA Root
-    - USERTrust ECC Certification Authority
-    - Thawte Primary Root CA
-    - Thawte Primary Root CA - G2
-    - Thawte Primary Root CA - G3
-    - Thawte Primary Root CA - G4
-    - GlobalSign Root R1
-    - GlobalSign Root R3
-    - GlobalSign Root R6
-    - GlobalSign Root R46
-    - GlobalSign ECC Root R5
-    - GlobalSign Root E46
-    - GlobalSign Client Authentication Root E45
-    - GlobalSign Client Authentication Root R45
-    - GlobalSign Code Signing Root E45
-    - GlobalSign Code Signing Root R45
-    - GlobalSign Document Signing Root E45
-    - GlobalSign Document Signing Root R45
-    - GlobalSign IoT Root E60
-    - GlobalSign IoT Root R60
-    - GlobalSign Secure Mail Root E45
-    - GlobalSign Secure Mail Root R45
-    - GlobalSign Timestamping Root R45
-    - GlobalSign Timestamping Root E46
-    - VeriSign Class 3 Public Primary Certification Authority - G3
-    - VeriSign Class 3 Public Primary Certification Authority - G4
-    - VeriSign Class 3 Public Primary Certification Authority - G5
-    - VeriSign Universal Root Certification Authority
+    - name: Baltimore CyberTrust Root
+      url: https://cacerts.digicert.com/BaltimoreCyberTrustRoot.crt.pem
+    - name: Cybertrust Global Root
+      url: https://cacerts.digicert.com/CybertrustGlobalRoot.crt.pem
+    - name: DigiCert Assured ID Root G2
+      url: https://cacerts.digicert.com/DigiCertAssuredIDRootG2.crt.pem
+    - name: DigiCert Global Root G2
+      url: https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem
+    - name: DigiCert Assured ID Root G3
+      url: https://cacerts.digicert.com/DigiCertAssuredIDRootG3.crt.pem
+    - name: DigiCert Federated ID Root CA
+      url: https://cacerts.digicert.com/DigiCertFederatedIDRootCA.crt.pem
+    - name: DigiCert Global Root G3
+      url: https://cacerts.digicert.com/DigiCertGlobalRootG3.crt.pem
+    - name: DigiCert Private Services Root
+      url: https://cacerts.digicert.com/DigiCertPrivateServicesRoot.crt.pem
+    - name: DigiCert Trusted Root G4
+      url: https://cacerts.digicert.com/DigiCertTrustedRootG4.crt.pem
+    - name: GTE CyberTrust Global Root
+      url: https://cacerts.digicert.com/GTECyberTrustGlobalRoot.crt.pem
+    - name: Verizon Global Root CA
+      url: https://cacerts.digicert.com/VerizonGlobalRootCA.crt.pen
+    - name: GeoTrust Primary Certification Authority
+      url: http://cacerts.digicert.com/GeoTrustPCA.crt.pem
+    - name: GeoTrust Primary Certification Authority - G2
+      url: https://cacerts.digicert.com/GeoTrustPCA-G2.crt.pem
+    - name: GeoTrust Primary Certification Authority - G3
+      url: https://cacerts.digicert.com/GeoTrustPCA-G3.crt.pem
+    - name: DigiCert Assured ID Root CA
+      url: https://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt.pem
+    - name: DigiCert Global Root CA
+      url: https://cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem
+    - name: DigiCert High Assurance EV Root CA
+      url: https://cacerts.digicert.com/DigiCertHighAssuranceEVRootCA.crt.pem
+    - name: DigiCert Global Root G2
+      url: https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem
+    - name: DigiCert TLS RSA4096 Root G5
+      url: https://cacerts.digicert.com/DigiCertTLSRSA4096RootG5.crt.pem
+    - name: DigiCert TLS ECC P384 Root G5
+      url: https://cacerts.digicert.com/G3CrossSignedDigiCertTLSECCP384RootG5.crt.pem
+    - name: DigiCert CS ECC P384 Root G5
+      url: https://cacerts.digicert.com/DigiCertCSECCP384RootG5.crt.pem
+    - name: DigiCert CS RSA4096 Root G5
+      url: https://cacerts.digicert.com/DigiCertCSRSA4096RootG5.crt.pem
+    - name: DigiCert Client ECC P384 Root G5
+      url: https://cacerts.digicert.com/DigiCertClientECCP384RootG5.crt.pem
+    - name: DigiCert Client RSA4096 Root G5
+      url: https://cacerts.digicert.com/DigiCertClientRSA4096RootG5.crt.pem
+    - name: DigiCert SMIME ECC P384 Root G5
+      url: https://cacerts.digicert.com/DigiCertSMIMEECCP384RootG5.crt.pem
+    - name: DigiCert SMIME RSA4096 Root G5
+      url: https://cacerts.digicert.com/DigiCertSMIMERSA4096RootG5.crt.pem
+    - name: DigiCert ECC P384 Root G5
+      url: https://cacerts.digicert.com/DigiCertECCP384RootG5.crt.pem
+    - name: DigiCert RSA4096 Root G5
+      url: https://cacerts.digicert.com/DigiCertRSA4096RootG5.crt.pem
+    - name: DigiCert EV RSA CA G2
+      url: https://cacerts.digicert.com/DigiCertEVRSACAG2.crt.pem
+    - name: Symantec Class 3 Public Primary Certification Authority - G4
+      url: https://cacerts.digicert.com/symc-pca3-g4.crt.pem
+    - name: Symantec Class 3 Public Primary Certification Authority - G6
+      url: https://cacerts.digicert.com/pca3-g6.crt.pem
+    - name: AAA Certificate Services
+      url:
+    - name: Comodo Certification Authority
+      url:
+    - name: COMODO ECC Certification Authority
+      url:
+    - name: COMODO RSA Certification Authority
+      url:
+    - name: Secure Certificate Services
+      url:
+    - name: Trusted Certificate Services
+      url:
+    - name: USERTrust RSA Certification Authority
+      url:
+    - name: AddTrust Class 1 CA Root
+      url:
+    - name: AddTrust External CA Root
+      url:
+    - name: AddTrust Public CA Root
+      url:
+    - name: AddTrust Qualified CA Root
+      url:
+    - name: USERTrust ECC Certification Authority
+      url:
+    - name: Thawte Primary Root CA
+      url: https://www.thawte.com/roots/thawte_Primary_Root_CA.pem
+    - name: Thawte Primary Root CA - G2
+      url: https://www.thawte.com/roots/thawte_Primary_Root_CA-G2_ECC.pem
+    - name: Thawte Primary Root CA - G3
+      url: https://www.thawte.com/roots/thawte_Primary_Root_CA-G3_SHA256.pem
+    - name: Thawte Primary Root CA - G4
+      url: https://www.thawte.com/roots/thawte_Primary_Root_CA-G4_DSA.pem
+    - name: GlobalSign Root R1
+      url: https://secure.globalsign.net/cacert/Root-R1.crt
+    - name: GlobalSign Root R3
+      url: https://secure.globalsign.net/cacert/Root-R3.crt
+    - name: GlobalSign Root R6
+      url: https://secure.globalsign.net/cacert/root-r6.crt
+    - name: GlobalSign Root R46
+      url: https://secure.globalsign.com/cacert/rootr46.crt
+    - name: GlobalSign ECC Root R5
+      url: https://secure.globalsign.net/cacert/Root-R5.crt
+    - name: GlobalSign Root E46
+      url: https://secure.globalsign.com/cacert/roote46.crt
+    - name: GlobalSign Client Authentication Root E45
+      url: https://secure.globalsign.com/cacert/clientauthroote45.crt
+    - name: GlobalSign Client Authentication Root R45
+      url: https://secure.globalsign.com/cacert/clientauthrootr45.crt
+    - name: GlobalSign Code Signing Root E45
+      url: https://secure.globalsign.com/cacert/codesigningroote45.crt
+    - name: GlobalSign Code Signing Root R45
+      url: https://secure.globalsign.com/cacert/codesigningrootr45.crt
+    - name: GlobalSign Document Signing Root E45
+      url: https://secure.globalsign.com/cacert/docsignroote45.crt
+    - name: GlobalSign Document Signing Root R45
+      url: https://secure.globalsign.com/cacert/docsignrootr45.crt
+    - name: GlobalSign IoT Root E60
+      url: https://secure.globalsign.com/cacert/iotroote60.crt
+    - name: GlobalSign IoT Root R60
+      url: https://secure.globalsign.com/cacert/iotrootr60.crt
+    - name: GlobalSign Secure Mail Root E45
+      url: https://secure.globalsign.com/cacert/smimeroote45.crt
+    - name: GlobalSign Secure Mail Root R45
+      url: https://secure.globalsign.com/cacert/smimerootr45.crt
+    - name: GlobalSign Timestamping Root R45
+      url: https://secure.globalsign.com/cacert/timestamprootr45.crt
+    - name: GlobalSign Timestamping Root E46
+      url: http://secure.globalsign.com/cacert/timestamproote46.crt
+    - name: VeriSign Class 3 Public Primary Certification Authority - G3
+      url:
+    - name: VeriSign Class 3 Public Primary Certification Authority - G4
+      url:
+    - name: VeriSign Class 3 Public Primary Certification Authority - G5
+      url:
+    - name: VeriSign Universal Root Certification Authority
+      url:
