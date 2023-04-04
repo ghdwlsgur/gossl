@@ -1,12 +1,14 @@
 package internal
 
 import (
+	"crypto/ecdsa"
 	"crypto/md5"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"os"
 	"strings"
 )
@@ -54,7 +56,11 @@ func GetPemType(file string) (*Pem, error) {
 
 	block, _ := pem.Decode(data)
 	if block == nil {
-		return nil, fmt.Errorf("%s's pem block is empty, check certificate type", file)
+		return &Pem{
+			Type:  "CRT",
+			Data:  data,
+			Block: nil,
+		}, nil
 	} else {
 		p.Type = block.Type
 		p.Data = data
@@ -70,18 +76,26 @@ func GetPemType(file string) (*Pem, error) {
 
 func GetMd5FromCertificate(p *Pem) (*Md5, error) {
 
-	m := &Md5{}
 	cert, err := x509.ParseCertificate(p.getBlock().Bytes)
 	if err != nil {
 		return nil, err
 	}
 
-	pubKey := cert.PublicKey.(*rsa.PublicKey).N
+	var pubKey *big.Int
+	switch cert.PublicKeyAlgorithm.String() {
+	case "RSA":
+		pubKey = cert.PublicKey.(*rsa.PublicKey).N
+	case "ECDSA":
+		pubKey = cert.PublicKey.(*ecdsa.PublicKey).Params().N
+	}
+
 	modulus := strings.ToUpper(hex.EncodeToString(pubKey.Bytes()))
 	mdl := fmt.Sprintf("Modulus=%s", modulus)
 
 	hash := md5.New()
 	hash.Write([]byte(mdl))
+
+	m := &Md5{}
 	m.Certificate = hex.EncodeToString(hash.Sum(nil))
 
 	return &Md5{
@@ -147,10 +161,33 @@ func PrivateToRsaPrivate(newFileName string, pemBlock *pem.Block) error {
 	if err != nil {
 		return err
 	}
+	defer newFile.Close()
 
 	pem.Encode(newFile, &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(priv.(*rsa.PrivateKey)),
 	})
+	return nil
+}
+
+func CrtToCertificate(newFileName string, bytes []byte) error {
+	crt, err := x509.ParseCertificate(bytes)
+	if err != nil {
+		return err
+	}
+
+	newFile, err := os.Create(newFileName)
+	if err != nil {
+		return err
+	}
+	defer newFile.Close()
+
+	if err := pem.Encode(newFile, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: crt.Raw,
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
