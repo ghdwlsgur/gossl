@@ -77,16 +77,22 @@ func AskInput(Message string, PageSize int) (string, error) {
 }
 
 func AskSelect(Message string, Options []string) (string, error) {
-
 	prompt := &survey.Select{
 		Message: Message,
 		Options: Options,
 	}
 
 	answer := ""
+	var pageSize int
+	if len(Options) > 10 {
+		pageSize = 10
+	} else {
+		pageSize = len(Options)
+	}
+
 	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
 		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(len(Options))); err != nil {
+	}), survey.WithPageSize(pageSize)); err != nil {
 		return "", err
 	}
 
