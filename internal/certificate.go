@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -37,8 +38,50 @@ type RootYaml struct {
 }
 
 type YamlData struct {
-	LastModified int
-	Metadata     []string
+	LastModified int        `yaml:"lastModified"`
+	Metadata     []Metadata `yaml:"metadata"`
+}
+
+type Metadata struct {
+	Name string `yaml:"name"`
+	Url  string `yaml:"url"`
+}
+
+func (m Metadata) getName() string {
+	return m.Name
+}
+
+func (m Metadata) getUrl() string {
+	return m.Url
+}
+
+func (y YamlData) GetNameListOwnURL() []string {
+	var result []string
+	for _, metadata := range y.Metadata {
+		if len(metadata.getUrl()) > 0 {
+			result = append(result, metadata.getName())
+		}
+	}
+	return result
+}
+
+func (y YamlData) GetURLListOwnURL() []string {
+	var result []string
+	for _, metadata := range y.Metadata {
+		if len(metadata.getUrl()) > 0 {
+			result = append(result, metadata.getUrl())
+		}
+	}
+	return result
+}
+
+func (y YamlData) FindURL(name string) string {
+	for _, metadata := range y.Metadata {
+		if metadata.getName() == name {
+			return metadata.getUrl()
+		}
+	}
+	return "No Data"
 }
 
 func (c x509Certificate) getSubject() pkix.Name {
@@ -255,25 +298,61 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 	return leafFormat, nil
 }
 
-func caRootCondition(cn string) (bool, error) {
-	var r RootYaml
+func ParsingYaml(yamlObject *RootYaml) error {
+	filename, _ := filepath.Abs("config/rootSSL.yaml")
 
-	filename, _ := filepath.Abs("../config/rootSSL.yaml")
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	err = yaml.Unmarshal(data, &r)
+	err = yaml.Unmarshal(data, &yamlObject)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func caRootCondition(cn string) (bool, error) {
+	var r RootYaml
+	err := ParsingYaml(&r)
 	if err != nil {
 		return false, err
 	}
 
 	for _, v := range r.Root.Metadata {
-		if cn == v {
+		if cn == v.Name {
 			return true, nil
 		}
 	}
 
 	return false, nil
+}
+
+func DownloadCertificate(url string, out string) error {
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	result, err := os.Create(dir + "/" + out)
+	if err != nil {
+		return err
+	}
+	defer result.Close()
+
+	_, err = io.Copy(result, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

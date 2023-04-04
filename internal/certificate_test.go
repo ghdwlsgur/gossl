@@ -53,7 +53,7 @@ func TestCARootCondition(t *testing.T) {
 		"DigiCert CS ECC P384 Root G5",
 		"DigiCert CS RSA4096 Root G5",
 		"DigiCert Client ECC P384 Root G5",
-		"DigiCert Client RSA4096 Root G5", // 23
+		"DigiCert Client RSA4096 Root G5",
 		"DigiCert SMIME ECC P384 Root G5",
 		"DigiCert SMIME RSA4096 Root G5",
 		"DigiCert ECC P384 Root G5",
