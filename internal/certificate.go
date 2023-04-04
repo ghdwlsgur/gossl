@@ -322,7 +322,7 @@ func caRootCondition(cn string) (bool, error) {
 	}
 
 	for _, v := range r.Root.Metadata {
-		if cn == v.Name {
+		if cn == v.getName() {
 			return true, nil
 		}
 	}
