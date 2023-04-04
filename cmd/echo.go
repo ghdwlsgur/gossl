@@ -57,6 +57,13 @@ var (
 			color.HiBlackString("Verify Host"),
 			strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
 		internal.PrintSplitFunc("Subject", cert.Subject.String())
+
+		if len(cert.DNSNames) > 0 {
+			dnsToString := strings.Join(cert.DNSNames, " ")
+			fmt.Printf("%s\t%s\n",
+				color.HiBlackString("SAN DNS  "),
+				color.HiMagentaString(strings.ReplaceAll(dnsToString, " ", "\n\t\t")))
+		}
 		internal.PrintSplitFunc("Issuer Name", cert.Issuer.String())
 		internal.PrintFunc("Expire Date", cert.NotAfter.Format("2006-January-02"))
 		internal.PrintFunc("Type", pem.Type)
@@ -65,7 +72,7 @@ var (
 		if err != nil {
 			return err
 		}
-		internal.PrintFunc("Detail", color.MagentaString(detail))
+		internal.PrintFunc("Detail", color.HiMagentaString(detail))
 
 		md5, err := internal.GetMd5FromCertificate(pem)
 		if err != nil {
