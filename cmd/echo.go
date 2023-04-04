@@ -12,6 +12,25 @@ import (
 )
 
 var (
+	_parseCrt = func(fileName string, pem *internal.Pem) error {
+		question := fmt.Sprintf("This is %s, Do you want to change to %s ?", color.HiRedString("CRT"), color.HiGreenString("CERTIFICATE"))
+		answer, err := internal.AskSelect(question, []string{"Yes (Overwrite file)", "No (exit)"})
+		if err != nil {
+			return err
+		}
+
+		if strings.Split(answer, " ")[0] == "Yes" {
+			err = internal.CrtToCertificate(fileName, pem.Data)
+			if err != nil {
+				panicRed(err)
+			}
+			fmt.Print(color.HiGreenString("✅ Converted successfully (crt -> pem)"))
+		} else {
+			os.Exit(1)
+		}
+		return nil
+	}
+
 	_parsePrivateKey = func(fileName string, pem *internal.Pem) error {
 		question := fmt.Sprintf("This is %s, Do you want to change to %s ?", color.HiRedString("PRIVATE KEY"), color.HiGreenString("RSA PRIVATE KEY"))
 		answer, err := internal.AskSelect(question, []string{"Yes (Overwrite file)", "No (exit)"})
@@ -131,6 +150,9 @@ var (
 				_parseRsaPrivateKey(p)
 			case "CERTIFICATE":
 				_parseCertificate(certFile, pemBlockCount, p)
+			case "CRT":
+				_parseCrt(fileName, p)
+
 			default:
 				panicRed(fmt.Errorf("sorry, %s isn't supported", p.Type))
 			}
