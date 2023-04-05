@@ -13,7 +13,7 @@ var (
 		Use:   "download",
 		Short: "download root certificate",
 		Long:  "download root certificate",
-		Run: func(_ *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			var (
 				err error
 				r   internal.RootYaml

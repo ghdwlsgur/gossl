@@ -299,7 +299,7 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 }
 
 func ParsingYaml(yamlObject *RootYaml) error {
-	filename, _ := filepath.Abs("config/rootSSL.yaml")
+	filename, _ := filepath.Abs("/opt/homebrew/lib/gossl/config.yaml")
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
