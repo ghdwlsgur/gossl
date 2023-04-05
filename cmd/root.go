@@ -53,13 +53,13 @@ func Execute(version string) {
 }
 
 func configDownload() {
-	// create folder: /opt/homebrew/lib/gossl
-	err := os.Mkdir(path, 0755)
-	if err != nil {
-		panic(err)
-	}
-
 	if _, err := os.Stat(_defaultYamlConfigPath); errors.Is(err, os.ErrNotExist) {
+		// create folder: /opt/homebrew/lib/gossl
+		err := os.Mkdir(path, 0755)
+		if err != nil {
+			panic(err)
+		}
+
 		resp, err := http.Get(_configURL)
 		if err != nil {
 			panicRed(err)
