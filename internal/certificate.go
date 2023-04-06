@@ -189,6 +189,12 @@ func printCertifiacetInfo(cert *x509.Certificate) {
 
 	PrintFunc("Verify Host", strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
 	PrintSplitFunc("Subject", x509C.getSubject().String())
+	if len(cert.DNSNames) > 0 {
+		dnsToString := strings.Join(cert.DNSNames, " ")
+		fmt.Printf("%s\t%s\n",
+			color.HiBlackString("SAN DNS  "),
+			color.HiMagentaString(strings.ReplaceAll(dnsToString, " ", "\n\t\t")))
+	}
 	PrintSplitFunc("Issuer Name", x509C.getIssuerName().String())
 	PrintFunc("Common Name", x509C.getIssuerCommonName())
 	PrintFunc("Start Date", x509C.getStartDate())
