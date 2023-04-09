@@ -22,7 +22,7 @@ root:
     - name: GTE CyberTrust Global Root
       url: https://cacerts.digicert.com/GTECyberTrustGlobalRoot.crt.pem
     - name: Verizon Global Root CA
-      url: https://cacerts.digicert.com/VerizonGlobalRootCA.crt.pen
+      url: https://cacerts.digicert.com/VerizonGlobalRootCA.crt.pem
     - name: GeoTrust Primary Certification Authority
       url: http://cacerts.digicert.com/GeoTrustPCA.crt.pem
     - name: GeoTrust Primary Certification Authority - G2
