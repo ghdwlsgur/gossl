@@ -7,5 +7,5 @@ import (
 func main() {
 	// check gossl version
 	// gossl -v
-	cmd.Execute("1.3.10")
+	cmd.Execute("1.4.1")
 }
