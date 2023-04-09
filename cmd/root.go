@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -29,7 +31,8 @@ var (
 )
 
 const (
-	_configURL = "https://raw.githubusercontent.com/ghdwlsgur/gossl/master/config/rootSSL.yaml"
+	_configURL      = "https://raw.githubusercontent.com/ghdwlsgur/gossl/master/config/rootSSL.yaml"
+	_configFileMode = 0755
 )
 
 var (
@@ -52,31 +55,68 @@ func Execute(version string) {
 	}
 }
 
+func updateConfig() error {
+
+	localConfigData, err := os.ReadFile(_defaultYamlConfigPath)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Get(_configURL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	remoteConfigData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	localHash := sha256.Sum256(localConfigData)
+	remoteHash := sha256.Sum256(remoteConfigData)
+
+	if localHash != remoteHash {
+		ioutil.WriteFile(_defaultYamlConfigPath, remoteConfigData, _configFileMode)
+		fmt.Println(color.GreenString("Config File \t(%s)", "update complete"))
+	} else {
+		fmt.Println(color.GreenString("Config File \t(%s)", "up-to-date"))
+	}
+	return nil
+}
+
+func createConfigFile() {
+	err := os.Mkdir(path, _configFileMode)
+	if err != nil {
+		panicRed(err)
+	}
+
+	resp, err := http.Get(_configURL)
+	if err != nil {
+		panicRed(err)
+	}
+	defer resp.Body.Close()
+
+	configFile, err := os.Create(_defaultYamlConfigPath)
+	if err != nil {
+		panicRed(err)
+	}
+	defer configFile.Close()
+
+	_, err = io.Copy(configFile, resp.Body)
+	if err != nil {
+		panicRed(err)
+	}
+	fmt.Println(color.GreenString("SSL ROOT CERTIFICATE CONFIG FILE Download Complete"))
+}
+
 func configDownload() {
 	if _, err := os.Stat(_defaultYamlConfigPath); errors.Is(err, os.ErrNotExist) {
 		// create folder: /opt/homebrew/lib/gossl
-		err := os.Mkdir(path, 0755)
-		if err != nil {
-			panic(err)
-		}
-
-		resp, err := http.Get(_configURL)
-		if err != nil {
-			panicRed(err)
-		}
-		defer resp.Body.Close()
-
-		configFile, err := os.Create(_defaultYamlConfigPath)
-		if err != nil {
-			panicRed(err)
-		}
-		defer configFile.Close()
-
-		_, err = io.Copy(configFile, resp.Body)
-		if err != nil {
-			panicRed(err)
-		}
-		fmt.Println(color.GreenString("SSL ROOT CERTIFICATE CONFIG FILE Download Complete"))
+		createConfigFile()
+	} else {
+		// create file: /opt/homebrew/lib/gossl/config.yaml
+		updateConfig()
 	}
 }
 
