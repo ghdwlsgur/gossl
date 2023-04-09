@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"crypto/x509"
 	"fmt"
 	"os"
@@ -132,7 +133,7 @@ var (
 				panicRed(err)
 			}
 
-			pemBlockCount := internal.CountPemBlock(data)
+			pemBlockCount := internal.CountPemBlock(bytes.TrimSpace(data))
 
 			// Save the extension of the selected certificate file
 			internal.SetCertExtension(certFile, fileName)
