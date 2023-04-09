@@ -78,9 +78,6 @@ func updateConfig() error {
 
 	if localHash != remoteHash {
 		ioutil.WriteFile(_defaultYamlConfigPath, remoteConfigData, _configFileMode)
-		fmt.Println(color.GreenString("Config File \t(%s)", "update complete"))
-	} else {
-		fmt.Println(color.GreenString("Config File \t(%s)", "up-to-date"))
 	}
 	return nil
 }
@@ -107,7 +104,7 @@ func createConfigFile() {
 	if err != nil {
 		panicRed(err)
 	}
-	fmt.Println(color.GreenString("SSL ROOT CERTIFICATE CONFIG FILE Download Complete"))
+	fmt.Println(color.GreenString("🎉 SSL ROOT CERTIFICATE CONFIG FILE Download Complete 🎉"))
 }
 
 func configDownload() {
