@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/md5"
 	"crypto/rsa"
@@ -82,11 +83,14 @@ func GetMd5FromCertificate(p *Pem) (*Md5, error) {
 	}
 
 	var pubKey *big.Int
+
 	switch cert.PublicKeyAlgorithm.String() {
 	case "RSA":
 		pubKey = cert.PublicKey.(*rsa.PublicKey).N
 	case "ECDSA":
 		pubKey = cert.PublicKey.(*ecdsa.PublicKey).Params().N
+	case "DSA":
+		pubKey = cert.PublicKey.(*dsa.PublicKey).Y
 	}
 
 	modulus := strings.ToUpper(hex.EncodeToString(pubKey.Bytes()))
