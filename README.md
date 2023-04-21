@@ -15,7 +15,9 @@
 
 # Overview
 
-An Interactive CLI Tool that easily combines or validates https certificates.
+This is an interactive CLI tool that helps to check and process the information of certificate and private key files, making it easy to apply the certificate to a web server.
+
+[Korean Document](https://ghdwlsgur.github.io/docs/OpenSource/gossl)
 
 # Chain of trust
 
@@ -28,21 +30,6 @@ A chain of trust is designed to allow multiple users to create and use software 
 This process results in a chain of trust. The final software can be trusted to have certain properties, because if it had been illegally modified its signature would be invalid, and the previous software would not have executed it. The previous software can be trusted, because it, in turn, would not have been loaded if its signature had been invalid. The trustworthiness of each layer is guaranteed by the one before, back to the trust anchor.
 
 It would be possible to have the hardware check the suitability (signature) for every single piece of software. However, this would not produce the flexibility that a "chain" provides. In a chain, any given link can be replaced with a different version to provide different properties, without having to go all the way back to the trust anchor. This use of multiple layers is an application of a general technique to improve scalability, and is analogous to the use of multiple certificates in a certificate chain.
-
-# Supported CAs
-
-### `Leaf - Intermediate - Root`
-
-- Sectigo RSA Domain Validation Secure Server CA
-- GoGetSSL RSA DV CA
-- GlobalSign GCC R3 DV TLS CA 2020
-
-### `Leaf - Intermediate`
-
-- Thawte RSA CA 2018
-- AlphaSSL CA - SHA256 - G2
-- GeoTrust RSA CA 2018
-- RapidSSL RSA CA 2018
 
 # Installation
 
@@ -60,91 +47,80 @@ brew upgrade gossl
 
 ### [Download](https://github.com/ghdwlsgur/gossl/releases)
 
-# Workflow
-
-> Describe the workflow with gossl command arguments.
-
-### unzip ➡️ echo ➡️ merge ➡️ split ➡️ zip ➡️ validate
-
-- `unzip`: Unzip the compressed file.
-
-- `echo`: Check the type of each certificate file and compare the md5 hash values. If the target file is an ecc private key, it is not supported. Also, if it is a private key, it can be converted to an rsa private key.
-
-- `merge`: Combine the verified certificate files in the order of leaf, intermediate, and root.
-
-- `split`: When there is an integrated certificate that combines root certificate, intermediate certificate, and domain certificate, the type of each block in the integrated certificate is verified and files are created for each block type.
-
-- `zip`: Compress the merged certificate file and rsa private key into a zip file.
-
-- `validate`: Check the certificate information hanging on the domain.
-
 # How to use
 
-### `unzip`
-
-```bash
-gossl unzip -n [fileName]
-```
-
-<div align="center">
-<img src="https://user-images.githubusercontent.com/77400522/205485682-226ba402-692a-4304-88d3-8d87310ad90e.png">
-<img src="https://user-images.githubusercontent.com/77400522/205485685-f165eef7-da8c-47d6-a733-ab6725437c8b.png">
-</div>
-
 ### `echo`
+
+The tool displays a list of files with extensions ending in `pem, crt, ca, csr, cer, and key` in the current directory as options. If a single certificate file is selected, it indicates whether it is a chain certificate, root certificate, or domain certificate, and shows the `Md5 Hash` value, `expiration date`, `Subject` and `Issuer` information, and `Verify Host`. If the certificate is a domain certificate, it also provides additional information on `Subject Alternative Name`.
 
 ```bash
 gossl echo
 ```
 
-<div align="center">
-<img src="https://user-images.githubusercontent.com/77400522/205485947-d2ed8bb1-9b40-4add-aa18-ffb803e96db7.png">
-<img src="https://user-images.githubusercontent.com/77400522/205485948-874dd6d0-f114-4309-983d-f1c38750a5ea.png">
-</div>
-
 ### `merge`
+
+When you select each individual file of domain certificate, chain certificate, and root certificate, it combines them into one certificate file in the order of domain certificate, chain certificate, and root certificate.
 
 ```bash
 gossl merge -n [fileName]
 ```
 
-<div align="center">
-<img src="https://user-images.githubusercontent.com/77400522/205485834-4eb17caf-3e34-47ff-a73f-1364a1b67049.png">
-<img src="https://user-images.githubusercontent.com/77400522/205485835-766ee3c3-727b-489a-aefe-2ca81ae53cc3.png">
-</div>
-
 ### `split`
+
+Shows the order in which the domain certificate, chain certificate, and root certificate are composed into a single certificate file, or splits the file into separate files named according to the type of certificate, such as `gossl_internetiate_1.crt`, `gossl_leaf_1.crt`, and `gossl_root_1.crt`, so that the type of each certificate can be identified.
 
 ```bash
 gossl split # make file
 gossl split show # not make file
 ```
 
-<div align="center">
-<img src="https://user-images.githubusercontent.com/77400522/205486021-b1677395-ec89-487b-ae60-f7f5bdfd998e.png">
-<img src="https://user-images.githubusercontent.com/77400522/205486020-7c674c92-7ef6-441e-bbad-f0c6a8459e68.png">
-</div>
+### `unlock`
+
+When a private key is password-protected, it prompts for the password and replaces the original key with an unencrypted one.
+
+```bash
+gossl unlock
+```
 
 ### `zip`
+
+Compresses each file into a single archive.
 
 ```bash
 gossl zip -n [fileName]
 ```
 
-<div align="center">
-<img src="https://user-images.githubusercontent.com/77400522/205486258-550e58ba-94b8-42a1-8f4d-421e46e8aa7b.png">
-<img src="https://user-images.githubusercontent.com/77400522/205486262-4331d819-17ea-4a22-aaef-3c093543859a.png">
-</div>
+### `unzip`
+
+Decompresses the compressed file.
+
+```bash
+gossl unzip -n [fileName]
+```
 
 ### `validate`
+
+If the domain uses a CDN, it retrieves the domain certificate information applied to each edge device. If not, it retrieves the domain certificate information applied to the origin server.
 
 ```bash
 gossl validate -n [domain]
 ```
 
-<div align="center">
-<img src="https://user-images.githubusercontent.com/77400522/205486339-a6d35942-a160-4553-8976-38a072f04436.png">
-</div>
+### `check`
+
+It retrieves the certificate information applied to the domain.
+
+```bash
+gossl check [domain]
+```
+
+### `download`
+
+If you select one of the root certificates provided by gossl, it will be downloaded to the current directory.
+
+```bash
+gossl download
+```
 
 # License
 
