@@ -33,6 +33,10 @@ type Connection struct {
 	transport http.Transport
 }
 
+func (c Connection) getTransport() http.Transport {
+	return c.transport
+}
+
 type RootYaml struct {
 	Root YamlData `yaml:"root"`
 }
@@ -112,7 +116,7 @@ func (c x509Certificate) getSigAlgorithm() string {
 	return c.SigAlgorithm
 }
 
-func SetTransport(domainName, ip string) *Connection {
+func SetTransport(domainName, ip string) http.Transport {
 
 	transport := http.Transport{
 		Dial: (&net.Dialer{
@@ -126,8 +130,11 @@ func SetTransport(domainName, ip string) *Connection {
 		KeepAlive: 30 * time.Second,
 		DualStack: true,
 	}
+
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		if addr == fmt.Sprintf("%s:443", domainName) {
+			addr = fmt.Sprintf("%s:443", ip)
+		} else if ip != "" {
 			addr = fmt.Sprintf("%s:443", ip)
 		}
 		return dialer.DialContext(ctx, network, addr)
@@ -139,9 +146,11 @@ func SetTransport(domainName, ip string) *Connection {
 		MaxVersion:         tls.VersionTLS13,
 	}
 
-	return &Connection{
+	c := &Connection{
 		transport: transport,
 	}
+
+	return c.getTransport()
 }
 
 func expireDateCountToColor(expireDate string) string {
@@ -156,8 +165,8 @@ func expireDateCountToColor(expireDate string) string {
 }
 
 func GetCertificate(domain, ip string) error {
-	c := SetTransport(domain, ip)
-	transport := c.transport
+	transport := SetTransport(domain, ip)
+	// transport := c.transport
 
 	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:443", domain), transport.TLSClientConfig)
 	if err != nil {
@@ -217,9 +226,7 @@ func getLeafCertification(peerCertificates []*x509.Certificate, ip string) {
 
 func GetCertificateInfo(ip string, domain string) error {
 
-	c := SetTransport(domain, ip)
-	transport := c.transport
-
+	transport := SetTransport(domain, ip)
 	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:443", domain), transport.TLSClientConfig)
 	if err != nil {
 		return err
