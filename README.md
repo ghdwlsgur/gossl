@@ -53,6 +53,8 @@ brew upgrade gossl
 
 The tool displays a list of files with extensions ending in `pem, crt, ca, csr, cer, and key` in the current directory as options. If a single certificate file is selected, it indicates whether it is a chain certificate, root certificate, or domain certificate, and shows the `Md5 Hash` value, `expiration date`, `Subject` and `Issuer` information, and `Verify Host`. If the certificate is a domain certificate, it also provides additional information on `Subject Alternative Name`.
 
+The option is provided to convert a `crt` file to `pem` format.
+
 ```bash
 gossl echo
 ```
