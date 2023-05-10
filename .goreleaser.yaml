@@ -1,5 +1,4 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
+project_name: gossl
 before:
   hooks:
     - go mod tidy
@@ -22,18 +21,19 @@ builds:
       - all=-trimpath={{.Env.GOPATH}}
     ldflags:
       - -s -w
-      - -X main.govpnVersion=v0.1.1
+      - -X main.gosslVersion={{.Version}}
     ignore:
       - goos: windows
         goarch: arm64
 archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      amd64: x86_64
-    format: tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64      
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
     files:
       - LICENSE
       - README.md
@@ -49,13 +49,11 @@ release:
     name: gossl
 brews:
   - name: gossl
+    homepage: "https://github.com/ghdwlsgur/gossl"
+    description: "interactive CLI tool that helps to check and process the information of certificate and private key files, making it easy to apply the certificate to a web server"
     tap:
       owner: ghdwlsgur
       name: homebrew-gossl
     commit_author:
       name: ghdwlsgur
-      email: redmax45@naver.com
-    description: "An interactive cli tool that easily binds HTTPS certificates and diagnoses whether certificates are applied with edge servers as proxy."
-# modelines, feel free to remove those if you don't want/use them:
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
-# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+      email: vjinhyeokv@gmail.com
