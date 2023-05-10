@@ -61,7 +61,6 @@ var (
 
 func init() {
 	zipCommand.Flags().StringP("name", "n", "", "[optional] Enter the name of the compressed file.")
-
 	viper.BindPFlag("zip-file-name", zipCommand.Flags().Lookup("name"))
 
 	rootCmd.AddCommand(zipCommand)

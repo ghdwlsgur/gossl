@@ -13,11 +13,15 @@ var (
 		Use:   "download",
 		Short: "download root certificate",
 		Long:  "download root certificate",
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, args []string) {
 			var (
 				err error
 				r   internal.RootYaml
 			)
+
+			if err = cobra.NoArgs(cmd, args); err != nil {
+				panicRed(err)
+			}
 
 			err = internal.ParsingYaml(&r)
 			if err != nil {

@@ -10,7 +10,7 @@ var (
 		Use:   "check",
 		Short: "Check the certificate of domain",
 		Long:  "Check the certificate of domain",
-		Run: func(_ *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, args []string) {
 			var (
 				err error
 			)

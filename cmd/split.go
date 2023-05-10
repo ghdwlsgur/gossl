@@ -52,7 +52,7 @@ var (
 		Use:   "split",
 		Short: "Split Unified Certificate.",
 		Long:  "Split Unified Certificate.",
-		Run: func(_ *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, args []string) {
 			var (
 				certFile               *internal.CertFile
 				p                      *internal.Pem

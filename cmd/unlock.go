@@ -15,12 +15,16 @@ var (
 		Use:   "unlock",
 		Short: "Unlock RSA PRIVATE KEY FILE",
 		Long:  "Unlock RSA PRIVATE KEY FILE",
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, args []string) {
 			var (
 				certFile *internal.CertFile
 				p        *internal.Pem
 				err      error
 			)
+
+			if err = cobra.NoArgs(cmd, args); err != nil {
+				panicRed(err)
+			}
 
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
