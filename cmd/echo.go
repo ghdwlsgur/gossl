@@ -21,7 +21,7 @@ var (
 			color.HiWhiteString("Do you want to change to"),
 			color.HiGreenString("CERTIFICATE"),
 			color.HiGreenString("(PEM incoding)"))
-		answer, err := internal.AskSelect(question, []string{"Yes (Overwrite file)", "No (exit)"})
+		answer, err := internal.AskSelect(question, []string{"Yes (create file - PEM incoding)", "No (exit)"})
 		if err != nil {
 			return err
 		}
