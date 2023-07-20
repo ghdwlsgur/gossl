@@ -174,12 +174,13 @@ func PrivateToRsaPrivate(newFileName string, pemBlock *pem.Block) error {
 	return nil
 }
 
-func CrtToCertificate(newFileName string, bytes []byte) error {
+func CrtToCertificate(FileName string, bytes []byte) error {
 	crt, err := x509.ParseCertificate(bytes)
 	if err != nil {
 		return err
 	}
 
+	newFileName := fmt.Sprintf(strings.Split(FileName, ".")[0] + ".pem")
 	newFile, err := os.Create(newFileName)
 	if err != nil {
 		return err
