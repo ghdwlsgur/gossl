@@ -14,7 +14,13 @@ import (
 
 var (
 	_parseCrt = func(fileName string, pem *internal.Pem) error {
-		question := fmt.Sprintf("This is %s, Do you want to change to %s ?", color.HiRedString("CRT"), color.HiGreenString("CERTIFICATE"))
+		question := fmt.Sprintf("%s %s %s, %s %s %s?",
+			color.HiWhiteString("This is"),
+			color.HiRedString("CRT"),
+			color.HiRedString("(DER incoding)"),
+			color.HiWhiteString("Do you want to change to"),
+			color.HiGreenString("CERTIFICATE"),
+			color.HiGreenString("(PEM incoding)"))
 		answer, err := internal.AskSelect(question, []string{"Yes (Overwrite file)", "No (exit)"})
 		if err != nil {
 			return err
