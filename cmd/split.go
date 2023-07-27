@@ -117,9 +117,11 @@ var (
 			intermediateBlock := []*pem.Block{}
 			rootBlock := []*pem.Block{}
 
-			fmt.Printf("%s\n", color.HiWhiteString("Certificate Type"))
-			fmt.Printf("✅ %s\n", file)
+			fmt.Printf("✅ %s\n", color.HiGreenString(file))
 
+			leafSubIss := []string{}
+			intermediateSubIss := []string{}
+			rootSubIss := []string{}
 			for {
 				var block *pem.Block
 				block, data = pem.Decode(data)
@@ -138,17 +140,50 @@ var (
 				switch strings.TrimSpace(strings.Split(detail, " ")[0]) {
 				case "Leaf":
 					leafBlock = append(leafBlock, block)
+					subIss, err := internal.GetSubjectCNandIssuerCN(block)
+					if err != nil {
+						panicRed(err)
+					}
+					leafSubIss = append(leafSubIss, subIss...)
 					leafBlockCount++
 				case "Intermediate":
 					intermediateBlock = append(intermediateBlock, block)
+					subIss, err := internal.GetSubjectCNandIssuerCN(block)
+					if err != nil {
+						panicRed(err)
+					}
+					intermediateSubIss = append(intermediateSubIss, subIss...)
 					intermediateBlockCount++
 				case "Root":
 					rootBlock = append(rootBlock, block)
+					subIss, err := internal.GetSubjectCNandIssuerCN(block)
+					if err != nil {
+						panicRed(err)
+					}
+					rootSubIss = append(rootSubIss, subIss...)
 					rootBlockCount++
 				}
 
 				if len(data) == 0 {
 					break
+				}
+			}
+
+			if len(args) > 0 && args[0] == "show" {
+				if len(leafSubIss) > 0 && len(intermediateSubIss) > 0 {
+					if leafSubIss[len(leafSubIss)-1] == intermediateSubIss[0] {
+						fmt.Printf("\n%s %s\n", color.HiBlackString("Leaf:[Issuer CN] Intermediate:[Subject CN]"), color.HiMagentaString("Matched"))
+					} else {
+						fmt.Printf("\n%s %s\n", color.HiBlackString("Leaf:[Issuer CN] Intermediate:[Subject CN]"), color.HiRedString("Not Matched"))
+					}
+				}
+
+				if len(intermediateSubIss) > 0 && len(rootSubIss) > 0 {
+					if intermediateSubIss[len(intermediateSubIss)-1] == rootSubIss[0] {
+						fmt.Printf("%s %s\n", color.HiBlackString("Intermediate:[Issuer CN] Root:[Subject CN]"), color.HiMagentaString("Matched"))
+					} else {
+						fmt.Printf("%s %s\n", color.HiBlackString("Intermediate:[Issuer CN] Root:[Subject CN]"), color.HiRedString("Not Matched"))
+					}
 				}
 			}
 
@@ -164,7 +199,6 @@ var (
 					panicRed(err)
 				}
 			}
-
 		},
 	}
 )
