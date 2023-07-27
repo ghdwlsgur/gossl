@@ -14,6 +14,10 @@ import (
 
 var (
 	_parseCrt = func(fileName string, pem *internal.Pem) error {
+		if len(pem.Data) <= 0 {
+			panicRed(fmt.Errorf("file content is empty"))
+		}
+
 		question := fmt.Sprintf("%s %s %s, %s %s %s?",
 			color.HiWhiteString("This is"),
 			color.HiRedString("CRT"),
@@ -39,6 +43,10 @@ var (
 	}
 
 	_parsePrivateKey = func(fileName string, pem *internal.Pem) error {
+		if len(pem.Data) <= 0 {
+			panicRed(fmt.Errorf("file content is empty"))
+		}
+
 		question := fmt.Sprintf("This is %s, Do you want to change to %s ?", color.HiRedString("PRIVATE KEY"), color.HiGreenString("RSA PRIVATE KEY"))
 		answer, err := internal.AskSelect(question, []string{"Yes (Overwrite file)", "No (exit)"})
 		if err != nil {
@@ -57,6 +65,9 @@ var (
 	}
 
 	_parseRsaPrivateKey = func(pem *internal.Pem) error {
+		if len(pem.Data) <= 0 {
+			panicRed(fmt.Errorf("file content is empty"))
+		}
 		fmt.Println()
 		internal.PrintFunc("Type", color.HiRedString(pem.Type))
 		md5, err := internal.GetMd5FromRsaPrivateKey(pem)
@@ -69,6 +80,10 @@ var (
 	}
 
 	_parseCertificate = func(certFile *internal.CertFile, pemBlockCount int, pem *internal.Pem) error {
+		if len(pem.Data) <= 0 {
+			panicRed(fmt.Errorf("file content is empty"))
+		}
+
 		cert, err := x509.ParseCertificate(pem.Block.Bytes)
 		if err != nil {
 			panicRed(err)
