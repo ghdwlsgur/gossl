@@ -3,7 +3,7 @@ module github.com/ghdwlsgur/gossl
 go 1.19
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.3.6
+	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/fatih/color v1.15.0
 	github.com/hairyhenderson/go-which v0.2.0
 	github.com/spf13/cobra v1.7.0
