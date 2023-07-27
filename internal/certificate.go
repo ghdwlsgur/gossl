@@ -11,12 +11,16 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/go-resty/resty/v2"
 	"gopkg.in/yaml.v3"
+)
+
+const (
+	rootCertificateDownloadUrl = "https://ghdwlsgur.github.io/files/root_cert_config.yaml"
 )
 
 type x509Certificate struct {
@@ -312,16 +316,19 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 }
 
 func ParsingYaml(yamlObject *RootYaml) error {
-	filename, _ := filepath.Abs("/opt/homebrew/lib/gossl/config.yaml")
 
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return err
-	}
+	client := resty.New()
 
-	err = yaml.Unmarshal(data, &yamlObject)
-	if err != nil {
-		return err
+	resp, err := client.R().
+		SetHeader("Referer", "https://ghdwlsgur.github.io/").
+		SetHeader("Content-Type", "application/yaml").
+		Get(rootCertificateDownloadUrl)
+
+	if resp.StatusCode() == 200 {
+		err = yaml.Unmarshal(resp.Body(), &yamlObject)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

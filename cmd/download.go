@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
 )
@@ -39,6 +40,11 @@ var (
 			if err != nil {
 				panicRed(err)
 			}
+			fmt.Printf("%s %s %s",
+				color.HiBlackString("🎉 [ROOT CERTIFICATE]"),
+				color.HiWhiteString(fileName),
+				color.HiGreenString("Download Complete 🎉\n"))
+
 		},
 	}
 )

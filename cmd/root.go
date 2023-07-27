@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -104,21 +103,20 @@ func createConfigFile() {
 	if err != nil {
 		panicRed(err)
 	}
-	fmt.Println(color.GreenString("🎉 SSL ROOT CERTIFICATE CONFIG FILE Download Complete 🎉"))
 }
 
-func configDownload() {
-	if _, err := os.Stat(_defaultYamlConfigPath); errors.Is(err, os.ErrNotExist) {
-		// create folder: /opt/homebrew/lib/gossl
-		createConfigFile()
-	} else {
-		// create file: /opt/homebrew/lib/gossl/config.yaml
-		updateConfig()
-	}
-}
+// func configDownload() {
+// 	if _, err := os.Stat(_defaultYamlConfigPath); errors.Is(err, os.ErrNotExist) {
+// 		// create folder: /opt/homebrew/lib/gossl
+// 		createConfigFile()
+// 	} else {
+// 		// create file: /opt/homebrew/lib/gossl/config.yaml
+// 		updateConfig()
+// 	}
+// }
 
 func initConfig() {
-	configDownload()
+	// configDownload()
 
 	args := os.Args[1:]
 	_, _, err := rootCmd.Find(args)
