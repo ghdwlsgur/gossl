@@ -369,3 +369,16 @@ func DownloadCertificate(url string, out string) error {
 
 	return nil
 }
+
+func GetSubjectCNandIssuerCN(pem *pem.Block) ([]string, error) {
+	if len(pem.Bytes) <= 0 {
+		return nil, fmt.Errorf("file content is empty")
+	}
+
+	cert, err := x509.ParseCertificate(pem.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{cert.Subject.CommonName, cert.Issuer.CommonName}, nil
+}
