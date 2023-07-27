@@ -51,7 +51,7 @@ brews:
   - name: gossl
     homepage: "https://github.com/ghdwlsgur/gossl"
     description: "interactive CLI tool that helps to check and process the information of certificate and private key files, making it easy to apply the certificate to a web server"
-    tap:
+    repository:
       owner: ghdwlsgur
       name: homebrew-gossl
     commit_author:
