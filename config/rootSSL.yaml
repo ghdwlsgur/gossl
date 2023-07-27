@@ -64,7 +64,7 @@ root:
     - name: Symantec Class 3 Public Primary Certification Authority - G6
       url: https://cacerts.digicert.com/pca3-g6.crt.pem
     - name: AAA Certificate Services
-      url:
+      url: https://asset.securesign.kr/files/AAA_Certificate_Services_Root.txt
     - name: Comodo Certification Authority
       url:
     - name: COMODO ECC Certification Authority
@@ -76,7 +76,7 @@ root:
     - name: Trusted Certificate Services
       url:
     - name: USERTrust RSA Certification Authority
-      url:
+      url: https://comodoca.my.salesforce.com/sfc/p/1N000002Ljih/a/3l000000VZ4M/ie5Sho19m8SLjTZkH_VL8efOD1qyGFt9h5Ju1ddtbKQ
     - name: AddTrust Class 1 CA Root
       url:
     - name: AddTrust External CA Root
@@ -139,3 +139,151 @@ root:
       url:
     - name: VeriSign Universal Root Certification Authority
       url:
+    - name: Entrust.net Certificate Authority (2048)
+      url: https://web.entrust.com/root-certificates/entrust_2048_ca.cer
+    - name: Entrust Root Certification Authority
+      url: https://web.entrust.com/root-certificates/entrust_ev_ca.cer
+    - name: Entrust Root Certification Authority (G2)
+      url: https://web.entrust.com/root-certificates/entrust_g2_ca.cer
+    - name: Entrust Root Certification Authority (G3)
+      url: https://web.entrust.com/root-certificates/entrust_g3_ca.cer
+    - name: Entrust Root Certification Authority (EC1)
+      url: https://web.entrust.com/root-certificates/entrust_ec1_ca.cer
+    - name: DigiCert Assured ID CA-1
+      url: https://cacerts.digicert.com/DigiCertAssuredIDCA-1.crt.pem
+    - name: DigiCert Assured ID CA G2
+      url: https://cacerts.digicert.com/DigiCertAssuredIDCAG2.crt.pem
+    - name: DigiCert Assured ID CA G3
+      url: https://cacerts.digicert.com/DigiCertAssuredIDCAG3.crt.pem
+    - name: DigiCert Assured ID TLS CA
+      url: https://cacerts.digicert.com/DigiCertAssuredIDTLSCA.crt.pem
+    - name: DigiCert Assured ID Code Signing CA-1
+      url: https://cacerts.digicert.com/DigiCertAssuredIDCodeSigningCA-1.crt.pem
+    - name: DigiCert Baltimore CA-1 G2
+      url: https://cacerts.digicert.com/DigiCertBaltimoreCA-1G2.crt.pem
+    - name: DigiCert Baltimore CA-2 G2
+      url: https://cacerts.digicert.com/DigiCertBaltimoreCA-2G2.crt.pem
+    - name: DigiCert Document Signing CA
+      url: https://cacerts.digicert.com/DigiCertDocumentSigningCA.crt.pem
+    - name: DigiCert ECC Extended Validation Server CA
+      url: https://cacerts.digicert.com/DigiCertECCExtendedValidationServerCA.crt.pem
+    - name: DigiCert ECC Secure Server CA
+      url: https://cacerts.digicert.com/DigiCertECCSecureServerCA.crt.pem
+    - name: DigiCert EV Code Signing CA (SHA2)
+      url: https://cacerts.digicert.com/DigiCertEVCodeSigningCA-SHA2.crt.pem
+    - name: DigiCert EV Code Signing CA
+      url: https://cacerts.digicert.com/DigiCertEVCodeSigningCA.crt.pem
+    - name: DigiCert EV Server CA G4
+      url: https://cacerts.digicert.com/DigiCertEVServerCAG4.crt.pem
+    - name: DigiCert Extended Validation CA G3
+      url: https://cacerts.digicert.com/DigiCertExtendedValidationCAG3.crt.pem
+    - name: DigiCert Global CA-1
+      url: https://cacerts.digicert.com/DigiCertGlobalCA-1.crt.pem
+    - name: DigiCert Global CA G2
+      url: https://cacerts.digicert.com/DigiCertGlobalCAG2.crt.pem
+    - name: DigiCert Global CA G3
+      url: https://cacerts.digicert.com/DigiCertGlobalCAG3.crt.pem
+    - name: DigiCert High Assurance CA-3
+      url: https://cacerts.digicert.com/DigiCertHighAssuranceCA-3.crt.pem
+    - name: DigiCert High Assurance Code Signing CA-1
+      url: https://cacerts.digicert.com/DigiCertHighAssuranceCodeSigningCA-1.crt.pem
+    - name: DigiCert High Assurance EV CA-1
+      url: https://cacerts.digicert.com/DigiCertHighAssuranceEVCA-1.crt.pem
+    - name: DigiCert Private Server CA
+      url: https://cacerts.digicert.com/DigiCertPrivateServerCA.crt.pem
+    - name: DigiCert SHA2 Assured ID CA
+      url: https://cacerts.digicert.com/DigiCertSHA2AssuredIDCA.crt.pem
+    - name: DigiCert SHA2 Assured ID Code Signing CA
+      url: https://cacerts.digicert.com/DigiCertSHA2AssuredIDCodeSigningCA.crt.pem
+    - name: DigiCert SHA2 Extended Validation Server CA
+      url: https://cacerts.digicert.com/DigiCertSHA2ExtendedValidationServerCA.crt.pem
+    - name: DigiCert SHA2 High Assurance Code Signing CA
+      url: https://cacerts.digicert.com/DigiCertSHA2HighAssuranceCodeSigningCA.crt.pem
+    - name: DigiCert SHA2 High Assurance Server CA
+      url: https://cacerts.digicert.com/DigiCertSHA2HighAssuranceServerCA.crt.pem
+    - name: DigiCert SHA-2 RADIUS CA
+      url: https://cacerts.digicert.com/DigiCertSHA-2RADIUSCA.crt.pem
+    - name: DigiCert SHA2 Secure Server CA
+      url: https://cacerts.digicert.com/DigiCertSHA2SecureServerCA.crt.pem
+    - name: DigiCert Secure Auth CA
+      url: https://cacerts.digicert.com/DigiCertSecureAuthCA.crt.pem
+    - name: DigiCert Secure Server CA
+      url: https://cacerts.digicert.com/DigiCertSecureServerCA.crt.pem
+    - name: DigiCert Trusted Server CA
+      url: https://cacerts.digicert.com/DigiCertTrustedServerCA.crt.pem
+    - name: DigiCert Trusted Server CA G4
+      url: https://cacerts.digicert.com/DigiCertTrustedServerCAG4.crt.pem
+    - name: Encryption Everywhere DV TLS CA - G1
+      url: https://cacerts.digicert.com/EncryptionEverywhereDVTLSCA-G1.crt.pem
+    - name: Encryption Everywhere DV TLS CA - G2
+      url: https://cacerts.digicert.com/EncryptionEverywhereDVTLSCA-G2.crt.pem
+    - name: GeoTrust EV RSA CA 2018
+      url: https://cacerts.digicert.com/GeoTrustEVRSACA2018.crt.pem
+    - name: GeoTrust RSA CA 2018
+      url: https://cacerts.digicert.com/GeoTrustRSACA2018.crt.pem
+    - name: GeoTrust TLS RSA CA G1
+      url: https://cacerts.digicert.com/GeoTrustTLSRSACAG1.crt.pem
+    - name: RapidSSL ECC CA 2018
+      url: https://cacerts.digicert.com/RapidSSLECCCA2018.crt.pem
+    - name: RapidSSL RSA CA 2018
+      url: https://cacerts.digicert.com/RapidSSLRSACA2018.crt.pem
+    - name: RapidSSL TLS RSA CA G1
+      url: https://cacerts.digicert.com/RapidSSLTLSRSACAG1.crt.pem
+    - name: Thawte EV RSA CA 2018
+      url: https://cacerts.digicert.com/ThawteEVRSACA2018.crt.pem
+    - name: Thawte RSA CA 2018
+      url: https://cacerts.digicert.com/ThawteRSACA2018.crt.pem
+    - name: Thawte TLS RSA CA G1
+      url: https://cacerts.digicert.com/ThawteTLSRSACAG1.crt.pem
+    - name: DigiCert EV RSA CA G2
+      url: https://cacerts.digicert.com/DigiCertEVRSACAG2.crt.pem
+    - name: GeoTrust EV RSA CA G2
+      url: https://cacerts.digicert.com/GeoTrustEVRSACAG2.crt.pem
+    - name: Thawte EV RSA CA G2
+      url: https://cacerts.digicert.com/ThawteEVRSACAG2.crt.pem
+    - name: DigiCert SHA2 Assured ID Code Signing
+      url: https://cacerts.digicert.com/DigiCertSHA2AssuredIDCodeSigning.crt.pem
+    - name: GeoTrust TLS DV RSA Mixed SHA256 2020 CA-1
+      url: https://cacerts.digicert.com/GeoTrustTLSDVRSAMixedSHA2562020CA-1.crt.pem
+    - name: GeoTrust TLS DV RSA Mixed SHA256 2021 CA-1
+      url: https://cacerts.digicert.com/GeoTrustTLSDVRSAMixedSHA2562021CA-1.crt.pem
+    - name: RapidSSL TLS DV RSA Mixed SHA256 2020 CA-1
+      url: https://cacerts.digicert.com/RapidSSLTLSDVRSAMixedSHA2562020CA-1.crt.pem
+    - name: RapidSSL TLS DV RSA Mixed SHA256 2021 CA-1
+      url: https://cacerts.digicert.com/RapidSSLTLSDVRSAMixedSHA2562021CA-1.crt.pem
+    - name: DigiCert SHA2 Secure Server CA
+      url: https://cacerts.digicert.com/DigiCertSHA2SecureServerCA-2.crt.pem
+    - name: DigiCert TLS RSA SHA256 2020 CA1
+      url: https://cacerts.digicert.com/DigiCertTLSRSASHA2562020CA1-1.crt.pem
+    - name: DigiCert Global G2 TLS RSA SHA256 2020 CA1
+      url: https://cacerts.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt.pem
+    - name: DigiCert TLS Hybrid ECC SHA384 2020 CA1
+      url: https://cacerts.digicert.com/DigiCertTLSHybridECCSHA3842020CA1-1.crt.pem
+    - name: DigiCert Trusted G4 TLS RSA SHA384 2020 CA1
+      url: https://cacerts.digicert.com/DigiCertTrustedG4TLSRSASHA3842020CA1.crt.pem
+    - name: DigiCert Global G3 TLS ECC SHA384 2020 CA1
+      url: https://cacerts.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-1.crt.pem
+    - name: DigiCert Baltimore TLS RSA SHA256 2020 CA1
+      url: https://cacerts.digicert.com/DigiCertBaltimoreTLSRSASHA2562020CA1.crt.pem
+    - name: DigiCert Baltimore SMIME RSA SHA256 2020 CA1
+      url: https://cacerts.digicert.com/DigiCertBaltimoreSMIMERSASHA2562020CA1.crt.pem
+    - name: DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA1
+      url: https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem
+    - name: DigiCert Global G3 Code Signing ECC SHA384 2021 CA1
+      url: https://cacerts.digicert.com/DigiCertGlobalG3CodeSigningECCSHA3842021CA1.crt.pem
+    - name: DigiCert Trusted G4 Code Signing RSA4096 SHA256 SHA256 2021 CA1
+      url: https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA2562021CA1.crt.pem
+    - name: DigiCert Global G3 Code Signing ECC P256 SHA384 2021 CA1
+      url: https://cacerts.digicert.com/DigiCertGlobalG3CodeSigningECCP256SHA3842021CA1.crt.pem
+    - name: DigiCert Assured ID Client CA G2
+      url: https://cacerts.digicert.com/DigiCertAssuredIDClientCAG2.crt.pem
+    - name: DigiCert Trusted G4 RSA4096 SHA256 TimeStamping CA
+      url: https://cacerts.digicert.com/DigiCertTrustedG4RSA4096SHA256TimeStampingCA.crt.pem
+    - name: RapidSSL Global TLS RSA4096 SHA256 2022 CA1
+      url: https://cacerts.digicert.com/RapidSSLGlobalTLSRSA4096SHA2562022CA1.crt.pem
+    - name: GeoTrust Global TLS RSA4096 SHA256 2022 CA1
+      url: https://cacerts.digicert.com/GeoTrustGlobalTLSRSA4096SHA2562022CA1.crt.pem
+    - name: G1 Cross Signed DigiCert TLS RSA 4096 Root G5
+      url: https://cacerts.digicert.com/G1CrossSignedDigiCertTLSRSA4096RootG5.crt.pem
+    - name: G3 Cross Signed DigiCert TLS ECC P384 Root G5
+      url: https://cacerts.digicert.com/G3CrossSignedDigiCertTLSECCP384RootG5.crt.pem
