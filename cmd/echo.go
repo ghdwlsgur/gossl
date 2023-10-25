@@ -127,8 +127,8 @@ var (
 
 var (
 	// Query certificate or key file type and Md5 hash
-	catCommand = &cobra.Command{
-		Use:   "cat",
+	echoCommand = &cobra.Command{
+		Use:   "echo",
 		Short: "Show the contents of the certificate file/type and compare hashes.",
 		Long:  "Show the contents of the certificate file/type and compare hashes.",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -138,9 +138,9 @@ var (
 				err      error
 			)
 
-			if err = cobra.NoArgs(cmd, args); err != nil {
-				panicRed(err)
-			}
+			// if err = cobra.NoArgs(cmd, args); err != nil {
+			// panicRed(err)
+			// }
 
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
@@ -188,5 +188,5 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(catCommand)
+	rootCmd.AddCommand(echoCommand)
 }
