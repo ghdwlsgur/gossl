@@ -5,8 +5,10 @@ package internal
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -76,5 +78,62 @@ func TestDistinguishCertificate_TrailingNewlineIsStillLeaf(t *testing.T) {
 	}
 	if kind := strings.Fields(detail)[0]; kind != "Leaf" {
 		t.Errorf("후행 개행이 있는 단일 leaf 인증서를 %q 로 판정 (기대 Leaf). detail=%q", kind, detail)
+	}
+}
+
+// ECDSA 는 Params().N (곡선 위수) 를 써서 서로 다른 인증서가 같은 해시를 냈다.
+func TestGetMd5FromCertificate_EcdsaDistinguishesKeys(t *testing.T) {
+	k1, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	k2, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+
+	m1, err := GetMd5FromCertificate(&Pem{Block: &pem.Block{Bytes: newCert(t, false, []string{"a.com"}, "a", &k1.PublicKey, k1)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m2, err := GetMd5FromCertificate(&Pem{Block: &pem.Block{Bytes: newCert(t, false, []string{"b.com"}, "b", &k2.PublicKey, k2)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m1.Certificate == m2.Certificate {
+		t.Errorf("서로 다른 ECDSA 공개키가 같은 해시를 냈다: %s", m1.Certificate)
+	}
+}
+
+// RSA / ECDSA / DSA 외 알고리즘에서 pubKey 가 nil 인 채 역참조되어 패닉했다.
+func TestGetMd5FromCertificate_Ed25519(t *testing.T) {
+	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
+	m, err := GetMd5FromCertificate(&Pem{Block: &pem.Block{Bytes: newCert(t, false, []string{"ed.com"}, "ed", pub, priv)}})
+	if err != nil {
+		t.Fatalf("Ed25519 인증서에서 오류: %v", err)
+	}
+	if m.Certificate == "" {
+		t.Error("Ed25519 인증서의 해시가 비어 있다")
+	}
+}
+
+// GetPemType 은 DER 파일에 Block=nil 을 돌려준다. 그대로 역참조하면 패닉했다.
+func TestGetMd5FromCertificate_NilBlock(t *testing.T) {
+	if _, err := GetMd5FromCertificate(&Pem{Type: "CRT", Data: []byte("not pem"), Block: nil}); err == nil {
+		t.Error("Block 이 nil 인데 오류를 반환하지 않았다")
+	}
+}
+
+// 같은 쌍이면 인증서와 개인키의 해시가 같아야 도구가 쓸모 있다.
+func TestCertificateAndKeyFingerprintsMatch_RSA(t *testing.T) {
+	k, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	certMd5, err := GetMd5FromCertificate(&Pem{Block: &pem.Block{Bytes: newCert(t, false, []string{"r.com"}, "r", &k.PublicKey, k)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyBlock := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
+	keyMd5, err := GetMd5FromRsaPrivateKey(&Pem{Type: keyBlock.Type, Block: keyBlock})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if certMd5.Certificate != keyMd5.RsaPrivateKey {
+		t.Errorf("RSA 쌍의 해시가 다르다\n  cert = %s\n  key  = %s", certMd5.Certificate, keyMd5.RsaPrivateKey)
 	}
 }

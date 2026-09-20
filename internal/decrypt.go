@@ -1,15 +1,14 @@
 package internal
 
 import (
+	"crypto"
 	"crypto/dsa"
-	"crypto/ecdsa"
 	"crypto/md5"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"math/big"
 	"os"
 	"strings"
 )
@@ -75,32 +74,56 @@ func GetPemType(file string) (*Pem, error) {
 	}, nil
 }
 
+func md5Hex(b []byte) string {
+	sum := md5.Sum(b)
+	return hex.EncodeToString(sum[:])
+}
+
+// publicKeyFingerprint 는 공개키 하나에 대해 안정적인 지문을 만든다.
+// 인증서 쪽과 개인키 쪽이 모두 이 함수를 거치므로, 같은 쌍이면 반드시 같은 값이 나온다.
+//
+// RSA 는 openssl 의 modulus 표기를 그대로 쓴다. 나머지 알고리즘은 대응하는
+// -modulus 출력이 없으므로 PKIX DER 인코딩을 해싱한다.
+// 이렇게 해야 곡선 파라미터가 아니라 공개키 자체가 값에 반영된다.
+func publicKeyFingerprint(pub crypto.PublicKey) (string, error) {
+	switch k := pub.(type) {
+	case *rsa.PublicKey:
+		modulus := strings.ToUpper(hex.EncodeToString(k.N.Bytes()))
+		return md5Hex([]byte(fmt.Sprintf("Modulus=%s", modulus))), nil
+	case *dsa.PublicKey:
+		// DSA 는 MarshalPKIXPublicKey 가 지원하지 않는다.
+		if k.Y == nil {
+			return "", fmt.Errorf("dsa public key has no Y value")
+		}
+		modulus := strings.ToUpper(hex.EncodeToString(k.Y.Bytes()))
+		return md5Hex([]byte(fmt.Sprintf("Modulus=%s", modulus))), nil
+	default:
+		der, err := x509.MarshalPKIXPublicKey(pub)
+		if err != nil {
+			return "", fmt.Errorf("unsupported public key algorithm: %w", err)
+		}
+		return md5Hex(der), nil
+	}
+}
+
 func GetMd5FromCertificate(p *Pem) (*Md5, error) {
+
+	if p == nil || p.getBlock() == nil {
+		return nil, fmt.Errorf("no PEM block found, this file may be DER encoded")
+	}
 
 	cert, err := x509.ParseCertificate(p.getBlock().Bytes)
 	if err != nil {
 		return nil, err
 	}
 
-	var pubKey *big.Int
-
-	switch cert.PublicKeyAlgorithm.String() {
-	case "RSA":
-		pubKey = cert.PublicKey.(*rsa.PublicKey).N
-	case "ECDSA":
-		pubKey = cert.PublicKey.(*ecdsa.PublicKey).Params().N
-	case "DSA":
-		pubKey = cert.PublicKey.(*dsa.PublicKey).Y
+	fingerprint, err := publicKeyFingerprint(cert.PublicKey)
+	if err != nil {
+		return nil, err
 	}
 
-	modulus := strings.ToUpper(hex.EncodeToString(pubKey.Bytes()))
-	mdl := fmt.Sprintf("Modulus=%s", modulus)
-
-	hash := md5.New()
-	hash.Write([]byte(mdl))
-
 	m := &Md5{}
-	m.Certificate = hex.EncodeToString(hash.Sum(nil))
+	m.Certificate = fingerprint
 
 	return &Md5{
 		Certificate: m.getCertificate(),
@@ -109,46 +132,37 @@ func GetMd5FromCertificate(p *Pem) (*Md5, error) {
 
 func GetMd5FromRsaPrivateKey(p *Pem) (*Md5, error) {
 
+	if p == nil || p.getBlock() == nil {
+		return nil, fmt.Errorf("no PEM block found in private key file")
+	}
+
 	m := &Md5{}
 	block := p.getBlock()
-	isEncrypted := x509.IsEncryptedPEMBlock(block)
+	der := block.Bytes
 
-	if isEncrypted {
+	if x509.IsEncryptedPEMBlock(block) {
 		password, err := AskInput("What is your password", 1)
 		if err != nil {
 			return nil, err
 		}
 
-		b, err := x509.DecryptPEMBlock(block, []byte(password))
+		decrypted, err := x509.DecryptPEMBlock(block, []byte(password))
 		if err != nil {
 			return nil, err
 		}
-
-		priv, err := x509.ParsePKCS1PrivateKey(b)
-		if err != nil {
-			return nil, err
-		}
-
-		modulus := strings.ToUpper(hex.EncodeToString(priv.N.Bytes()))
-		mdl := fmt.Sprintf("Modulus=%s", modulus)
-
-		hash := md5.New()
-		hash.Write([]byte(mdl))
-		m.RsaPrivateKey = hex.EncodeToString(hash.Sum(nil))
-	} else {
-
-		priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-		if err != nil {
-			return nil, err
-		}
-
-		modulus := strings.ToUpper(hex.EncodeToString(priv.N.Bytes()))
-		mdl := fmt.Sprintf("Modulus=%s", modulus)
-
-		hash := md5.New()
-		hash.Write([]byte(mdl))
-		m.RsaPrivateKey = hex.EncodeToString(hash.Sum(nil))
+		der = decrypted
 	}
+
+	priv, err := x509.ParsePKCS1PrivateKey(der)
+	if err != nil {
+		return nil, err
+	}
+
+	fingerprint, err := publicKeyFingerprint(priv.Public())
+	if err != nil {
+		return nil, err
+	}
+	m.RsaPrivateKey = fingerprint
 
 	return &Md5{
 		RsaPrivateKey: m.getRsaPrivateKey(),
