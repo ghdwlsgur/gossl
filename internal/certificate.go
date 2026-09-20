@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -395,24 +396,33 @@ func DownloadCertificate(url string, out string) error {
 		return err
 	}
 
+	// out 은 사용자 입력이므로 상위 경로로 빠져나가지 못하게 파일명만 취한다.
+	name := filepath.Base(filepath.Clean(out))
+	if name == "." || name == string(filepath.Separator) {
+		return fmt.Errorf("invalid output file name: %q", out)
+	}
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	result, err := os.Create(dir + "/" + out)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download %s: status %s", url, resp.Status)
+	}
+
+	result, err := os.Create(filepath.Join(dir, name))
 	if err != nil {
 		return err
 	}
 	defer result.Close()
 
-	_, err = io.Copy(result, resp.Body)
-	if err != nil {
+	if _, err = io.Copy(result, resp.Body); err != nil {
 		return err
 	}
 
-	return nil
+	return result.Close()
 }
 
 func GetSubjectCNandIssuerCN(pem *pem.Block) ([]string, error) {
