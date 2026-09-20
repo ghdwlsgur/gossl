@@ -27,6 +27,8 @@ gossl.exe
 *.test
 coverage.txt
 coverage.out
+binary.txt
+covdata/
 *.prof
 
 # 모듈
