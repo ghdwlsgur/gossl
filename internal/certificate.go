@@ -294,22 +294,29 @@ func CountPemBlock(data []byte) int {
 	}
 }
 
+// isSelfSigned 는 인증서가 자기 자신의 키로 서명됐는지 암호학적으로 확인한다.
+//
+// 루트 CA 의 정의가 곧 자기 서명이다. 예전에는 Subject 와 Issuer 문자열을
+// 비교하고, 다르면 원격 이름 목록을 조회해 루트인지 판단했다. 그 목록에는
+// 중간 인증서 이름도 섞여 있어 (예: DigiCert EV RSA CA G2) 중간 인증서를
+// 루트로 분류했다. 이름은 식별자가 아니므로 서명을 직접 확인한다.
+func isSelfSigned(cert *x509.Certificate) bool {
+	if cert.Subject.String() != cert.Issuer.String() {
+		return false
+	}
+	return cert.CheckSignatureFrom(cert) == nil
+}
+
 func DistinguishCertificateWithConnection(cert *x509.Certificate) string {
 	if len(cert.DNSNames) > 0 {
 		return "Leaf Certificate"
 	}
 
 	if cert.IsCA {
-		if cert.Subject.String() == cert.Issuer.String() {
+		if isSelfSigned(cert) {
 			return "Root Certificate"
-		} else {
-			// 원격 목록 조회가 실패하면 루트로 단정하지 않고 중간 인증서로 둔다.
-			result, err := caRootCondition(cert.Subject.CommonName)
-			if err == nil && result {
-				return "Root Certificate"
-			}
-			return "Intermediate Certificate"
 		}
+		return "Intermediate Certificate"
 	}
 
 	return ""
@@ -323,21 +330,10 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 	}
 
 	if cert.IsCA && pemBlockCount == 1 {
-		rootFormat := fmt.Sprintf("%s [in %d block]", "Root Certificate", pemBlockCount)
-		if cert.Subject.String() == cert.Issuer.String() {
-			return rootFormat, nil
-		} else {
-
-			result, err := caRootCondition(cert.Subject.CommonName)
-			if err == nil && result {
-				return rootFormat, nil
-			}
-
-			// Intermediate Certificate
-			intermediateFormat := fmt.Sprintf("%s [in %d block]", "Intermediate Certificate", pemBlockCount)
-			return intermediateFormat, nil
-
+		if isSelfSigned(cert) {
+			return fmt.Sprintf("%s [in %d block]", "Root Certificate", pemBlockCount), nil
 		}
+		return fmt.Sprintf("%s [in %d block]", "Intermediate Certificate", pemBlockCount), nil
 	}
 
 	unifiedFormat := fmt.Sprintf("%s [in %d block]", "Unified Certificate", pemBlockCount)
@@ -371,22 +367,6 @@ func ParsingYaml(yamlObject *RootYaml) error {
 	}
 
 	return nil
-}
-
-func caRootCondition(cn string) (bool, error) {
-	var r RootYaml
-	err := ParsingYaml(&r)
-	if err != nil {
-		return false, err
-	}
-
-	for _, v := range r.Root.Metadata {
-		if cn == v.getName() {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 func DownloadCertificate(url string, out string) error {

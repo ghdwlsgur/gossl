@@ -319,3 +319,64 @@ func TestCrtToCertificate_FileNameWithDots(t *testing.T) {
 		t.Error("첫 점 기준으로 잘려 my.pem 이 생성됐다")
 	}
 }
+
+// 루트 인증서는 자기 자신이 서명한다. 원격 이름 목록으로 판별하면
+// 목록에 중간 인증서 이름이 섞여 있을 때 그것을 루트로 잘못 분류한다.
+// 실제로 DigiCert EV RSA CA G2 는 중간 인증서인데 목록에 들어 있다.
+func TestDistinguish_IntermediateIsNotRoot(t *testing.T) {
+	rootKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	rootTpl := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "Test Root CA"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(24 * time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign,
+	}
+	rootDER, err := x509.CreateCertificate(rand.Reader, rootTpl, rootTpl, &rootKey.PublicKey, rootKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, _ := x509.ParseCertificate(rootDER)
+
+	// 루트가 서명한 중간 인증서. Subject 와 Issuer 가 다르다.
+	// CN 은 원격 루트 목록에 실제로 들어 있는 이름을 쓴다. 이름 기반 판별은
+	// 이 인증서를 루트로 착각하지만, 자기 서명이 아니므로 중간 인증서다.
+	interKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	interTpl := &x509.Certificate{
+		SerialNumber:          big.NewInt(2),
+		Subject:               pkix.Name{CommonName: "DigiCert EV RSA CA G2"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(24 * time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign,
+	}
+	interDER, err := x509.CreateCertificate(rand.Reader, interTpl, root, &interKey.PublicKey, rootKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	inter, _ := x509.ParseCertificate(interDER)
+
+	for _, tc := range []struct {
+		name string
+		cert *x509.Certificate
+		want string
+	}{
+		{"자기 서명 루트", root, "Root Certificate"},
+		{"목록에 이름이 있는 중간", inter, "Intermediate Certificate"},
+	} {
+		if got := DistinguishCertificateWithConnection(tc.cert); got != tc.want {
+			t.Errorf("%s: DistinguishCertificateWithConnection = %q, 기대 %q", tc.name, got, tc.want)
+		}
+
+		detail, err := DistinguishCertificate(&Pem{Block: &pem.Block{Bytes: tc.cert.Raw}}, nil, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := tc.want + " [in 1 block]"; detail != want {
+			t.Errorf("%s: DistinguishCertificate = %q, 기대 %q", tc.name, detail, want)
+		}
+	}
+}
