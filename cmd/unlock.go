@@ -51,61 +51,56 @@ var (
 		Short: "Unlock RSA PRIVATE KEY FILE",
 		Long:  "Unlock RSA PRIVATE KEY FILE",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var (
-				certFile *internal.CertFile
-				p        *internal.Pem
-				err      error
-			)
-
-			if err = cobra.NoArgs(cmd, args); err != nil {
+			if err := cobra.NoArgs(cmd, args); err != nil {
 				return panicRed(err)
 			}
-
-			certFile, err = internal.DirGrepX509()
-			if err != nil {
-				return panicRed(err)
-			}
-
-			fileName, err := internal.AskSelect("Select RSA PRIVATE KEY File", certFile.Name)
-			if err != nil {
-				return panicRed(err)
-			}
-
-			p, err = internal.GetPemType(fileName)
-			if err != nil {
-				return panicRed(err)
-			}
-
-			if p.Type != "RSA PRIVATE KEY" {
-				return panicRed(fmt.Errorf("select only rsa private key file please"))
-			}
-
-			block := p.Block
-			isEncrypted := x509.IsEncryptedPEMBlock(block)
-
-			if isEncrypted {
-				password, err := internal.AskInput("What is your password", 1)
-				if err != nil {
-					return panicRed(err)
-				}
-
-				b, err := x509.DecryptPEMBlock(block, []byte(password))
-				if err != nil {
-					return panicRed(err)
-				}
-
-				if err := writeUnlockedKey(fileName, b); err != nil {
-					return panicRed(err)
-				}
-
-			} else {
-				return panicRed(fmt.Errorf("this rsa private key file is not locked"))
-			}
-			return nil
+			return runUnlock()
 		},
 	}
 )
 
 func init() {
 	rootCmd.AddCommand(unlockCommand)
+}
+
+// runUnlock 은 암호가 걸린 RSA 개인키를 골라 암호를 풀어 저장한다.
+func runUnlock() error {
+	certFile, err := internal.DirGrepX509()
+	if err != nil {
+		return panicRed(err)
+	}
+
+	fileName, err := internal.AskSelect("Select RSA PRIVATE KEY File", certFile.Name)
+	if err != nil {
+		return panicRed(err)
+	}
+
+	p, err := internal.GetPemType(fileName)
+	if err != nil {
+		return panicRed(err)
+	}
+	if p.Type != "RSA PRIVATE KEY" {
+		return panicRed(fmt.Errorf("select only rsa private key file please"))
+	}
+
+	//nolint:staticcheck // SA1019: 레거시 RFC 1423 키 호환을 위해 유지
+	if !x509.IsEncryptedPEMBlock(p.Block) {
+		return panicRed(fmt.Errorf("this rsa private key file is not locked"))
+	}
+
+	password, err := internal.AskInput("What is your password", 1)
+	if err != nil {
+		return panicRed(err)
+	}
+
+	//nolint:staticcheck // SA1019: 위와 동일
+	der, err := x509.DecryptPEMBlock(p.Block, []byte(password))
+	if err != nil {
+		return panicRed(err)
+	}
+
+	if err := writeUnlockedKey(fileName, der); err != nil {
+		return panicRed(err)
+	}
+	return nil
 }

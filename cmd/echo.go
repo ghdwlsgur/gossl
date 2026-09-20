@@ -124,64 +124,56 @@ var (
 		Use:   "echo",
 		Short: "Show the contents of the certificate file/type and compare hashes.",
 		Long:  "Show the contents of the certificate file/type and compare hashes.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			var (
-				certFile *internal.CertFile
-				p        *internal.Pem
-				err      error
-			)
-
-			// if err = cobra.NoArgs(cmd, args); err != nil {
-			// panicRed(err)
-			// }
-
-			certFile, err = internal.DirGrepX509()
-			if err != nil {
-				return panicRed(err)
-			}
-
-			// The user selects one of the list of certificates.
-			fileName, err := internal.AskSelect("Select Certificate File", certFile.Name)
-			if err != nil {
-				return panicRed(err)
-			}
-
-			data, err := os.ReadFile(fileName)
-			if err != nil {
-				return panicRed(err)
-			}
-
-			pemBlockCount := internal.CountPemBlock(bytes.TrimSpace(data))
-
-			// Save the extension of the selected certificate file
-			internal.SetCertExtension(certFile, fileName)
-
-			// Certificate type lookup
-			p, err = internal.GetPemType(fileName)
-			if err != nil {
-				return panicRed(err)
-			}
-
-			switch p.Type {
-			case "PRIVATE KEY":
-				err = _parsePrivateKey(fileName, p)
-			case "RSA PRIVATE KEY":
-				err = _parseRsaPrivateKey(p)
-			case "CERTIFICATE":
-				err = _parseCertificate(certFile, pemBlockCount, p)
-			case "CRT":
-				err = _parseCrt(fileName, p)
-			default:
-				return panicRed(fmt.Errorf("sorry, %s isn't supported", p.Type))
-			}
-			if err != nil {
-				return err
-			}
-			fmt.Println()
-			return nil
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return runEcho()
 		},
 	}
 )
+
+// runEcho 는 현재 디렉토리의 인증서·키 파일을 하나 골라 내용을 보여준다.
+func runEcho() error {
+	certFile, err := internal.DirGrepX509()
+	if err != nil {
+		return panicRed(err)
+	}
+
+	fileName, err := internal.AskSelect("Select Certificate File", certFile.Name)
+	if err != nil {
+		return panicRed(err)
+	}
+
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return panicRed(err)
+	}
+	pemBlockCount := internal.CountPemBlock(bytes.TrimSpace(data))
+
+	internal.SetCertExtension(certFile, fileName)
+
+	p, err := internal.GetPemType(fileName)
+	if err != nil {
+		return panicRed(err)
+	}
+
+	switch p.Type {
+	case "PRIVATE KEY":
+		err = _parsePrivateKey(fileName, p)
+	case "RSA PRIVATE KEY":
+		err = _parseRsaPrivateKey(p)
+	case "CERTIFICATE":
+		err = _parseCertificate(certFile, pemBlockCount, p)
+	case "CRT":
+		err = _parseCrt(fileName, p)
+	default:
+		return panicRed(fmt.Errorf("sorry, %s isn't supported", p.Type))
+	}
+	if err != nil {
+		return err
+	}
+
+	fmt.Println()
+	return nil
+}
 
 func init() {
 	rootCmd.AddCommand(echoCommand)

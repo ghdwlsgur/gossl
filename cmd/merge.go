@@ -12,137 +12,121 @@ import (
 	"github.com/spf13/viper"
 )
 
+// collectForMerge 는 고른 파일들을 읽어 종류별 블록으로 모은다.
+// allowPrivateKey 가 거짓이면 개인키가 섞인 파일을 거부한다.
+func collectForMerge(files []string, allowPrivateKey bool) (leaf, intermediate, root, private []*pem.Block, err error) {
+	for _, name := range files {
+		data, readErr := os.ReadFile(name)
+		if readErr != nil {
+			return nil, nil, nil, nil, readErr
+		}
+
+		first, _ := pem.Decode(data)
+		if first == nil {
+			return nil, nil, nil, nil, fmt.Errorf("%s is empty", name)
+		}
+
+		if isPrivateKeyBlock(first.Type) {
+			if !allowPrivateKey {
+				return nil, nil, nil, nil, fmt.Errorf("please select only the certificate file")
+			}
+			private = append(private, first)
+			continue
+		}
+
+		blockCount := internal.CountPemBlock(data)
+		detail, distErr := internal.DistinguishCertificate(&internal.Pem{Block: first}, nil, blockCount)
+		if distErr != nil {
+			return nil, nil, nil, nil, distErr
+		}
+
+		kind := strings.Fields(detail)[0]
+		if kind == "Unified" {
+			return nil, nil, nil, nil, fmt.Errorf("%s is already merged certificate file, please choose another file", name)
+		}
+
+		for {
+			var block *pem.Block
+			block, data = pem.Decode(data)
+			if block == nil {
+				break
+			}
+			switch kind {
+			case "Leaf":
+				leaf = append(leaf, block)
+			case "Intermediate":
+				intermediate = append(intermediate, block)
+			case "Root":
+				root = append(root, block)
+			}
+		}
+	}
+	return leaf, intermediate, root, private, nil
+}
+
+// isPrivateKeyBlock 은 PEM 타입이 개인키인지 본다.
+// RSA PRIVATE KEY 뿐 아니라 PKCS#8 과 EC 형식도 잡는다.
+func isPrivateKeyBlock(pemType string) bool {
+	return strings.HasSuffix(pemType, "PRIVATE KEY")
+}
+
+// writeMerged 는 leaf, intermediate, root, 개인키 순으로 한 파일에 쓴다.
+func writeMerged(path string, groups ...[]*pem.Block) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	for _, group := range groups {
+		for _, block := range group {
+			if err := pem.Encode(file, block); err != nil {
+				return err
+			}
+		}
+	}
+	return file.Close()
+}
+
+// runMerge 는 고른 인증서들을 신뢰 체인 순서로 하나의 파일에 합친다.
+func runMerge(requestedName string, allowPrivateKey bool) error {
+	newFile := outputName(requestedName, "gossl_merge_output", ".pem")
+
+	certFile, err := internal.DirGrepX509()
+	if err != nil {
+		return panicRed(err)
+	}
+
+	selectList, err := internal.AskMultiSelect("Select Certificate File", certFile.Name)
+	if err != nil {
+		return panicRed(err)
+	}
+	if n := len(selectList); n < 2 {
+		return panicRed(fmt.Errorf("please select at least 2"))
+	} else if n > 4 {
+		return panicRed(fmt.Errorf("please select up to 4"))
+	}
+
+	leaf, intermediate, root, private, err := collectForMerge(selectList, allowPrivateKey)
+	if err != nil {
+		return panicRed(err)
+	}
+
+	if err := writeMerged(newFile, leaf, intermediate, root, private); err != nil {
+		return panicRed(err)
+	}
+
+	fmt.Printf(color.HiGreenString("📄 %s created successfully\n"), newFile)
+	return nil
+}
+
 var (
 	mergeCommand = &cobra.Command{
 		Use:   "merge",
 		Short: "Combine each certificate file in order of leaf, intermediate, root.",
 		Long:  "Combine each certificate file in order of leaf, intermediate, root.",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			var (
-				certFile *internal.CertFile
-				p        *internal.Pem
-				err      error
-			)
-
-			argName := viper.GetString("pem-file-name")
-			if argName == "" {
-				argName = "gossl_merge_output"
-			}
-			newFile := fmt.Sprintf("%s.pem", strings.TrimSpace(argName))
-
-			certFile, err = internal.DirGrepX509()
-			if err != nil {
-				return panicRed(err)
-			}
-
-			selectList, err := internal.AskMultiSelect("Select Certificate File", certFile.Name)
-			if err != nil {
-				return panicRed(err)
-			}
-
-			n := len(selectList)
-			if n > 4 {
-				return panicRed(fmt.Errorf("please select up to 4"))
-			}
-
-			if n < 2 {
-				return panicRed(fmt.Errorf("please select at least 2"))
-			}
-
-			file, err := os.Create(newFile)
-			if err != nil {
-				return panicRed(err)
-			}
-			defer file.Close()
-
-			leafBlock := []*pem.Block{}
-			intermediateBlock := []*pem.Block{}
-			rootBlock := []*pem.Block{}
-			privateBlock := []*pem.Block{}
-
-			flagF := viper.GetBool("add-private-key")
-
-			for _, selectCert := range selectList {
-				internal.SetCertExtension(certFile, selectCert)
-
-				data, err := os.ReadFile(selectCert)
-				if err != nil {
-					return panicRed(err)
-				}
-
-				if !flagF {
-					if b, _ := pem.Decode(data); b != nil {
-						if b.Type == "RSA PRIVATE KEY" {
-							return panicRed(fmt.Errorf("please select only the certificate file"))
-						}
-					} else {
-						return panicRed(fmt.Errorf("%s is empty", selectCert))
-					}
-				} else {
-					if b, _ := pem.Decode(data); b != nil {
-						if b.Type == "RSA PRIVATE KEY" {
-							privateBlock = append(privateBlock, b)
-						}
-					} else {
-						return panicRed(fmt.Errorf("%s is empty", selectCert))
-					}
-				}
-
-				p, err = internal.GetPemType(selectCert)
-				if err != nil {
-					return panicRed(err)
-				}
-
-				pemBlockCount := internal.CountPemBlock(data)
-
-				if p.Type != "RSA PRIVATE KEY" {
-					detail, err := internal.DistinguishCertificate(p, certFile, pemBlockCount)
-					if err != nil {
-						return panicRed(err)
-					}
-
-					typeOfCertificate := strings.TrimSpace(strings.Split(detail, " ")[0])
-					if typeOfCertificate == "Unified" {
-						return panicRed(fmt.Errorf("%s is already merged certificate file, please choose another file", selectCert))
-					}
-
-					for {
-						var block *pem.Block
-						block, data = pem.Decode(data)
-						if block == nil {
-							break
-						}
-
-						if typeOfCertificate == "Leaf" {
-							leafBlock = append(leafBlock, block)
-						} else if typeOfCertificate == "Intermediate" {
-							intermediateBlock = append(intermediateBlock, block)
-						} else if typeOfCertificate == "Root" {
-							rootBlock = append(rootBlock, block)
-						}
-
-						if len(data) == 0 {
-							break
-						}
-					}
-				}
-			}
-
-			blockBucket := make([][]*pem.Block, 4)
-			blockBucket[0] = leafBlock
-			blockBucket[1] = intermediateBlock
-			blockBucket[2] = rootBlock
-			blockBucket[3] = privateBlock
-
-			for i := 0; i < len(blockBucket); i++ {
-				for _, block := range blockBucket[i] {
-					if err := pem.Encode(file, block); err != nil {
-						return panicRed(err)
-					}
-				}
-			}
-			fmt.Printf(color.HiGreenString("📄 %s created successfully\n"), newFile)
-			return nil
+			return runMerge(viper.GetString("pem-file-name"), viper.GetBool("add-private-key"))
 		},
 	}
 )

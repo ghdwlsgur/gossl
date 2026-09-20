@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/pem"
 	"errors"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/ghdwlsgur/gossl/internal"
 )
+
+var errTest = errors.New("테스트용 오류")
 
 // fakePrompter 는 미리 정한 답을 순서대로 돌려준다.
 type fakePrompter struct {
@@ -150,6 +153,49 @@ func TestRunDownload(t *testing.T) {
 		// FindURL 이 "No Data" 를 돌려주고 다운로드가 실패해야 한다.
 		if err := runDownload(); err == nil {
 			t.Error("잘못된 선택인데 오류를 반환하지 않았다")
+		}
+	})
+}
+
+func TestRunEcho(t *testing.T) {
+	dir := t.TempDir()
+	chdir(t, dir)
+
+	t.Run("대상 파일이 없다", func(t *testing.T) {
+		if err := runEcho(); err == nil {
+			t.Error("대상 파일이 없는데 오류를 반환하지 않았다")
+		}
+	})
+
+	root, inter, leaf := chain(t)
+	_ = inter
+	_ = root
+	if err := os.WriteFile(filepath.Join(dir, "leaf.pem"), pemBytes(leaf), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("인증서 정보를 보여준다", func(t *testing.T) {
+		defer internal.SetPrompter(&fakePrompter{selects: []string{"leaf.pem"}})()
+		if err := runEcho(); err != nil {
+			t.Fatalf("runEcho: %v", err)
+		}
+	})
+
+	t.Run("선택 취소", func(t *testing.T) {
+		defer internal.SetPrompter(&fakePrompter{err: errTest})()
+		if err := runEcho(); err == nil {
+			t.Error("취소했는데 오류를 반환하지 않았다")
+		}
+	})
+
+	t.Run("지원하지 않는 타입", func(t *testing.T) {
+		blk := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: []byte("x")})
+		if err := os.WriteFile(filepath.Join(dir, "pub.pem"), blk, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		defer internal.SetPrompter(&fakePrompter{selects: []string{"pub.pem"}})()
+		if err := runEcho(); err == nil {
+			t.Error("지원하지 않는 타입인데 오류를 반환하지 않았다")
 		}
 	})
 }
