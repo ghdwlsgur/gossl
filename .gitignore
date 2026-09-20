@@ -1,9 +1,38 @@
-**.pem
-**.key
-**.crt
-**.zip
-.DS_Store
+# 인증서와 개인키
+# gossl 은 현재 디렉토리의 pem, crt, key, ca, csr, cer 파일을 훑는다.
+# 실제 인증서를 두고 테스트하다 커밋하는 사고를 막는다.
+*.pem
+*.crt
+*.key
+*.ca
+*.csr
+*.cer
+*.der
+*.p12
+*.pfx
+*.jks
 
-vendor
-dist
-gopath
+# 빌드 산출물
+/dist/
+/gossl
+gossl.exe
+*.exe
+
+# 테스트 산출물
+*.test
+coverage.txt
+coverage.out
+*.prof
+
+# 모듈
+/vendor/
+
+# 압축 파일 (zip / unzip 명령의 결과)
+*.zip
+*.tar.gz
+
+# 에디터와 OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
