@@ -269,3 +269,18 @@ func TestDialTLS_PinsToGivenIP(t *testing.T) {
 		t.Errorf("IP 를 고정했는데 %s 에 접속됐다", addr)
 	}
 }
+
+// SAN 이 없는 CA 인증서에서도 이름 출력이 안전해야 한다.
+func TestHostNames(t *testing.T) {
+	k, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+
+	leaf, _ := x509.ParseCertificate(newCert(t, false, []string{"a.com", "b.com"}, "a.com", &k.PublicKey, k))
+	if got := HostNames(leaf); got != "a.com, b.com" {
+		t.Errorf("HostNames = %q, 기대 %q", got, "a.com, b.com")
+	}
+
+	ca, _ := x509.ParseCertificate(newCert(t, true, nil, "Test Root CA", &k.PublicKey, k))
+	if got := HostNames(ca); got == "" {
+		t.Error("SAN 이 없는 인증서에서 빈 문자열을 반환했다")
+	}
+}

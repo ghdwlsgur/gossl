@@ -211,6 +211,21 @@ func GetCertificate(domain, ip string) error {
 	return nil
 }
 
+// HostNames 는 인증서가 보증하는 이름을 사람이 읽을 형태로 돌려준다.
+// 예전 구현은 VerifyHostname("") 의 오류 문자열을 쉼표와 콜론으로 잘라 썼는데,
+// 오류 메시지 형식이 다르면 인덱스 범위를 벗어났다.
+func HostNames(cert *x509.Certificate) string {
+	names := make([]string, 0, len(cert.DNSNames)+len(cert.IPAddresses))
+	names = append(names, cert.DNSNames...)
+	for _, ip := range cert.IPAddresses {
+		names = append(names, ip.String())
+	}
+	if len(names) == 0 {
+		return "certificate is not valid for any names"
+	}
+	return strings.Join(names, ", ")
+}
+
 func printCertifiacetInfo(cert *x509.Certificate) {
 	formatDate := "2006-01-02"
 	x509C := &x509Certificate{
@@ -222,10 +237,7 @@ func printCertifiacetInfo(cert *x509.Certificate) {
 		PubAlgorithm:     cert.PublicKeyAlgorithm.String(),
 		SigAlgorithm:     cert.SignatureAlgorithm.String(),
 	}
-	h := fmt.Sprintf("%s", cert.VerifyHostname(""))
-	hl := strings.Split(h, ",")
-
-	PrintFunc("Verify Host", strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
+	PrintFunc("Verify Host", HostNames(cert))
 	PrintSplitFunc("Subject", x509C.getSubject().String())
 	if len(cert.DNSNames) > 0 {
 		dnsToString := strings.Join(cert.DNSNames, " ")

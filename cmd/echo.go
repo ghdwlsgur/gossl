@@ -91,12 +91,7 @@ var (
 
 		fmt.Printf(color.HiWhiteString("\n%s\n"), strings.Split(cert.Issuer.String(), ",")[0])
 
-		h := fmt.Sprintf("%s", cert.VerifyHostname(""))
-		hl := strings.Split(h, ",")
-
-		fmt.Printf("%s\t%s\n",
-			color.HiBlackString("Verify Host"),
-			strings.TrimSpace(strings.Split(hl[:len(hl)-1][0], ":")[1]))
+		internal.PrintFunc("Verify Host", internal.HostNames(cert))
 		internal.PrintSplitFunc("Subject", cert.Subject.String())
 
 		if len(cert.DNSNames) > 0 {
