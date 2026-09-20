@@ -34,10 +34,10 @@ type x509Certificate struct {
 }
 
 type Connection struct {
-	transport http.Transport
+	transport *http.Transport
 }
 
-func (c Connection) getTransport() http.Transport {
+func (c Connection) getTransport() *http.Transport {
 	return c.transport
 }
 
@@ -120,41 +120,69 @@ func (c x509Certificate) getSigAlgorithm() string {
 	return c.SigAlgorithm
 }
 
-func SetTransport(domainName, ip string) http.Transport {
+// dialTimeout 은 접속과 핸드셰이크에 공통으로 쓰는 제한 시간이다.
+const dialTimeout = 10 * time.Second
 
-	transport := http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: 5 * time.Second,
-		}).Dial,
-		TLSHandshakeTimeout: 5 * time.Second,
+func SetTransport(domainName, ip string) *http.Transport {
+
+	transport := &http.Transport{
+		TLSHandshakeTimeout: dialTimeout,
 	}
 
 	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
+		Timeout:   dialTimeout,
 		KeepAlive: 30 * time.Second,
-		DualStack: true,
 	}
 
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr == fmt.Sprintf("%s:443", domainName) {
-			addr = fmt.Sprintf("%s:443", ip)
-		} else if ip != "" {
-			addr = fmt.Sprintf("%s:443", ip)
+		if ip != "" {
+			// 도메인이 아니라 지정된 IP 로 붙는다. 포트는 원래 요청의 것을 유지한다.
+			_, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				port = "443"
+			}
+			addr = net.JoinHostPort(ip, port)
 		}
 		return dialer.DialContext(ctx, network, addr)
 	}
 
-	transport.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: true,
-		MinVersion:         tls.VersionTLS11,
-		MaxVersion:         tls.VersionTLS13,
-	}
+	transport.TLSClientConfig = tlsConfig(domainName)
 
 	c := &Connection{
 		transport: transport,
 	}
 
 	return c.getTransport()
+}
+
+// tlsConfig 는 인증서를 "검사"하기 위한 설정이다.
+// 만료되었거나 체인이 끊긴 인증서도 봐야 하므로 검증은 끄되,
+// ServerName 은 반드시 도메인으로 둔다. 그래야 SNI 로 올바른 인증서를 받는다.
+func tlsConfig(serverName string) *tls.Config {
+	return &tls.Config{
+		ServerName:         serverName,
+		InsecureSkipVerify: true, //nolint:gosec // 검사 도구이므로 의도적으로 검증하지 않는다
+		MinVersion:         tls.VersionTLS12,
+		MaxVersion:         tls.VersionTLS13,
+	}
+}
+
+// DialTLS 는 ip 가 주어지면 그 주소로 접속하고, SNI 는 domain 으로 보낸다.
+func DialTLS(domain, ip string) (*tls.Conn, error) {
+	host := domain
+	if ip != "" {
+		host = ip
+	}
+
+	dialer := &net.Dialer{Timeout: dialTimeout}
+	conn, err := tls.DialWithDialer(dialer, "tcp", net.JoinHostPort(host, "443"), tlsConfig(domain))
+	if err != nil {
+		if ip != "" {
+			return nil, fmt.Errorf("failed to connect to %s (%s): %w", domain, ip, err)
+		}
+		return nil, fmt.Errorf("failed to connect to %s: %w", domain, err)
+	}
+	return conn, nil
 }
 
 func expireDateCountToColor(expireDate string) string {
@@ -169,10 +197,7 @@ func expireDateCountToColor(expireDate string) string {
 }
 
 func GetCertificate(domain, ip string) error {
-	transport := SetTransport(domain, ip)
-	// transport := c.transport
-
-	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:443", domain), transport.TLSClientConfig)
+	conn, err := DialTLS(domain, ip)
 	if err != nil {
 		return err
 	}
@@ -230,8 +255,7 @@ func getLeafCertification(peerCertificates []*x509.Certificate, ip string) {
 
 func GetCertificateInfo(ip string, domain string) error {
 
-	transport := SetTransport(domain, ip)
-	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:443", domain), transport.TLSClientConfig)
+	conn, err := DialTLS(domain, ip)
 	if err != nil {
 		return err
 	}

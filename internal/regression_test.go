@@ -254,3 +254,18 @@ func TestRsaFingerprintMatchesOpenssl(t *testing.T) {
 		t.Errorf("키 해시가 openssl 과 다르다\n  gossl   = %s\n  openssl = %s", keyMd5.RsaPrivateKey, want)
 	}
 }
+
+// SetTransport 가 만든 DialContext 를 tls.Dial 에 넘기지 않아
+// ip 인자가 조용히 무시됐다. 지정한 IP 로 실제로 붙는지 확인한다.
+func TestDialTLS_PinsToGivenIP(t *testing.T) {
+	if testing.Short() {
+		t.Skip("네트워크가 필요해 건너뜀")
+	}
+	// RFC 5737 TEST-NET-1. 어떤 호스트도 응답하지 않는다.
+	conn, err := DialTLS("example.com", "192.0.2.1")
+	if err == nil {
+		addr := conn.RemoteAddr().String()
+		conn.Close()
+		t.Errorf("IP 를 고정했는데 %s 에 접속됐다", addr)
+	}
+}
