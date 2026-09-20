@@ -5,10 +5,45 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
 )
+
+// writeUnlockedKey 는 복호화한 키를 원자적으로 교체한다.
+// 원본을 먼저 비우면 이후 단계가 실패했을 때 개인키를 잃는다.
+func writeUnlockedKey(fileName string, der []byte) error {
+	info, err := os.Stat(fileName)
+	if err != nil {
+		return err
+	}
+
+	tmp, err := os.CreateTemp(filepath.Dir(fileName), filepath.Base(fileName)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+
+	if err := tmp.Chmod(info.Mode().Perm()); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := pem.Encode(tmp, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: der}); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+
+	return os.Rename(tmpName, fileName)
+}
 
 var (
 	unlockCommand = &cobra.Command{
@@ -59,13 +94,7 @@ var (
 					panicRed(err)
 				}
 
-				existfile, err := os.Create(fileName)
-				if err != nil {
-					panicRed(err)
-				}
-				defer existfile.Close()
-
-				if pem.Encode(existfile, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: b}); err != nil {
+				if err := writeUnlockedKey(fileName, b); err != nil {
 					panicRed(err)
 				}
 
