@@ -4,6 +4,7 @@ package internal
 // 각 테스트는 해당 수정이 없으면 실패한다.
 
 import (
+	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
@@ -378,5 +379,139 @@ func TestDistinguish_IntermediateIsNotRoot(t *testing.T) {
 		if want := tc.want + " [in 1 block]"; detail != want {
 			t.Errorf("%s: DistinguishCertificate = %q, 기대 %q", tc.name, detail, want)
 		}
+	}
+}
+
+// publicKeyFingerprint 의 나머지 분기: DSA, 지원하지 않는 타입.
+func TestPublicKeyFingerprint_Branches(t *testing.T) {
+	t.Run("DSA", func(t *testing.T) {
+		var params dsa.Parameters
+		if err := dsa.GenerateParameters(&params, rand.Reader, dsa.L1024N160); err != nil {
+			t.Skipf("DSA 파라미터 생성 실패: %v", err)
+		}
+		priv := &dsa.PrivateKey{PublicKey: dsa.PublicKey{Parameters: params}}
+		if err := dsa.GenerateKey(priv, rand.Reader); err != nil {
+			t.Skipf("DSA 키 생성 실패: %v", err)
+		}
+		got, err := publicKeyFingerprint(&priv.PublicKey)
+		if err != nil {
+			t.Fatalf("DSA 공개키에서 오류: %v", err)
+		}
+		if len(got) != 32 {
+			t.Errorf("md5 hex 길이 = %d, 기대 32", len(got))
+		}
+	})
+
+	t.Run("Y 가 없는 DSA", func(t *testing.T) {
+		if _, err := publicKeyFingerprint(&dsa.PublicKey{}); err == nil {
+			t.Error("Y 가 nil 인데 오류를 반환하지 않았다")
+		}
+	})
+
+	t.Run("지원하지 않는 타입", func(t *testing.T) {
+		if _, err := publicKeyFingerprint("not a key"); err == nil {
+			t.Error("알 수 없는 타입인데 오류를 반환하지 않았다")
+		}
+	})
+}
+
+func TestParsePrivateKey_Invalid(t *testing.T) {
+	if _, err := parsePrivateKey([]byte("garbage")); err == nil {
+		t.Error("파싱 불가한 DER 인데 오류를 반환하지 않았다")
+	}
+	if _, err := privateKeyFingerprint([]byte("garbage")); err == nil {
+		t.Error("privateKeyFingerprint 가 오류를 반환하지 않았다")
+	}
+}
+
+func TestGetPemType(t *testing.T) {
+	dir := t.TempDir()
+
+	k, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	der := newCert(t, false, []string{"p.test"}, "p", &k.PublicKey, k)
+
+	pemPath := filepath.Join(dir, "cert.pem")
+	if err := os.WriteFile(pemPath, certPem(der), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p, err := GetPemType(pemPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.getType() != "CERTIFICATE" || p.getBlock() == nil || len(p.getData()) == 0 {
+		t.Errorf("PEM 파일 = %+v", p)
+	}
+
+	// DER 파일은 PEM 이 아니므로 Block 이 nil 이고 타입이 CRT 다.
+	derPath := filepath.Join(dir, "cert.crt")
+	if err := os.WriteFile(derPath, der, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p, err = GetPemType(derPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.getType() != "CRT" || p.getBlock() != nil {
+		t.Errorf("DER 파일 = %+v", p)
+	}
+
+	if _, err := GetPemType(filepath.Join(dir, "missing.pem")); err == nil {
+		t.Error("없는 파일인데 오류를 반환하지 않았다")
+	}
+}
+
+func TestGetMd5_ErrorPaths(t *testing.T) {
+	if _, err := GetMd5FromCertificate(nil); err == nil {
+		t.Error("nil Pem 인데 오류를 반환하지 않았다")
+	}
+	if _, err := GetMd5FromCertificate(&Pem{Block: &pem.Block{Bytes: []byte("garbage")}}); err == nil {
+		t.Error("파싱 불가한 인증서인데 오류를 반환하지 않았다")
+	}
+	if _, err := GetMd5FromRsaPrivateKey(nil); err == nil {
+		t.Error("nil Pem 인데 오류를 반환하지 않았다")
+	}
+	if _, err := GetMd5FromRsaPrivateKey(&Pem{Type: "CRT", Block: nil}); err == nil {
+		t.Error("Block 이 nil 인데 오류를 반환하지 않았다")
+	}
+}
+
+func TestPrivateToRsaPrivate_Success(t *testing.T) {
+	k, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	der, err := x509.MarshalPKCS8PrivateKey(k)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(t.TempDir(), "converted.key")
+	if err := PrivateToRsaPrivate(out, &pem.Block{Type: "PRIVATE KEY", Bytes: der}); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blk, _ := pem.Decode(data)
+	if blk == nil || blk.Type != "RSA PRIVATE KEY" {
+		t.Fatalf("변환 결과 블록 = %+v", blk)
+	}
+	if _, err := x509.ParsePKCS1PrivateKey(blk.Bytes); err != nil {
+		t.Errorf("PKCS#1 로 다시 읽을 수 없다: %v", err)
+	}
+
+	if err := PrivateToRsaPrivate(out, nil); err == nil {
+		t.Error("nil 블록인데 오류를 반환하지 않았다")
+	}
+	if err := PrivateToRsaPrivate(out, &pem.Block{Bytes: []byte("garbage")}); err == nil {
+		t.Error("파싱 불가한 블록인데 오류를 반환하지 않았다")
+	}
+}
+
+func TestCrtToCertificate_Invalid(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "x.crt")
+	if err := CrtToCertificate(out, []byte("garbage")); err == nil {
+		t.Error("파싱 불가한 DER 인데 오류를 반환하지 않았다")
 	}
 }
