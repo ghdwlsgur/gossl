@@ -14,13 +14,24 @@ type Prompter interface {
 }
 
 // surveyPrompter 는 실제 터미널에 묻는 기본 구현이다.
-type surveyPrompter struct{}
+//
+// opts 는 비워 두면 survey 가 os.Stdin/Stdout/Stderr 를 쓴다.
+// 테스트에서는 survey.WithStdio 로 가짜 터미널을 넣는다.
+type surveyPrompter struct {
+	opts []survey.AskOpt
+}
+
+// askOpts 는 공통 옵션에 이 프롬프터의 추가 옵션을 붙인다.
+func (p surveyPrompter) askOpts(extra ...survey.AskOpt) []survey.AskOpt {
+	opts := append([]survey.AskOpt{survey.WithIcons(focusGreen)}, extra...)
+	return append(opts, p.opts...)
+}
 
 func focusGreen(icons *survey.IconSet) {
 	icons.SelectFocus.Format = "green+hb"
 }
 
-func (surveyPrompter) Select(message string, options []string) (string, error) {
+func (p surveyPrompter) Select(message string, options []string) (string, error) {
 	pageSize := len(options)
 	if pageSize > 10 {
 		pageSize = 10
@@ -30,33 +41,31 @@ func (surveyPrompter) Select(message string, options []string) (string, error) {
 	if err := survey.AskOne(
 		&survey.Select{Message: message, Options: options},
 		&answer,
-		survey.WithIcons(focusGreen),
-		survey.WithPageSize(pageSize),
+		p.askOpts(survey.WithPageSize(pageSize))...,
 	); err != nil {
 		return "", err
 	}
 	return getAnswer(newField(Answer{Name: answer})).Name, nil
 }
 
-func (surveyPrompter) MultiSelect(message string, options []string) ([]string, error) {
+func (p surveyPrompter) MultiSelect(message string, options []string) ([]string, error) {
 	answer := []string{}
 	if err := survey.AskOne(
 		&survey.MultiSelect{Message: message, Options: options},
 		&answer,
-		survey.WithIcons(focusGreen),
-		survey.WithPageSize(len(options)),
+		p.askOpts(survey.WithPageSize(len(options)))...,
 	); err != nil {
 		return nil, err
 	}
 	return getAnswer(newField(AnswerList{Name: answer})).Name, nil
 }
 
-func (surveyPrompter) Input(message string) (string, error) {
+func (p surveyPrompter) Input(message string) (string, error) {
 	answer := ""
 	if err := survey.AskOne(
 		&survey.Input{Message: message},
 		&answer,
-		survey.WithIcons(focusGreen),
+		p.askOpts()...,
 	); err != nil {
 		return "", err
 	}

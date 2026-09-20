@@ -111,15 +111,22 @@ func TestPrompterErrorsPropagate(t *testing.T) {
 }
 
 // SetPrompter 는 이전 구현을 되돌려야 한다.
+//
+// surveyPrompter 는 슬라이스 필드를 가져 == 로 비교할 수 없으므로
+// 타입으로 확인한다.
 func TestSetPrompterRestores(t *testing.T) {
-	original := prompter
-	restore := SetPrompter(&FakePrompter{})
-	if prompter == original {
-		t.Error("교체되지 않았다")
+	if _, ok := prompter.(surveyPrompter); !ok {
+		t.Fatalf("시작 상태가 surveyPrompter 가 아니다: %T", prompter)
 	}
+
+	restore := SetPrompter(&FakePrompter{})
+	if _, ok := prompter.(*FakePrompter); !ok {
+		t.Errorf("교체되지 않았다: %T", prompter)
+	}
+
 	restore()
-	if prompter != original {
-		t.Error("되돌아가지 않았다")
+	if _, ok := prompter.(surveyPrompter); !ok {
+		t.Errorf("되돌아가지 않았다: %T", prompter)
 	}
 }
 

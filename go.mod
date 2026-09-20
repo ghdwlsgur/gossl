@@ -4,8 +4,11 @@ go 1.26.0
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
+	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
+	github.com/creack/pty v1.1.17
 	github.com/fatih/color v1.19.0
 	github.com/hairyhenderson/go-which v0.2.3
+	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 )
