@@ -50,7 +50,7 @@ var (
 		Use:   "unlock",
 		Short: "Unlock RSA PRIVATE KEY FILE",
 		Long:  "Unlock RSA PRIVATE KEY FILE",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				certFile *internal.CertFile
 				p        *internal.Pem
@@ -58,26 +58,26 @@ var (
 			)
 
 			if err = cobra.NoArgs(cmd, args); err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			fileName, err := internal.AskSelect("Select RSA PRIVATE KEY File", certFile.Name)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			p, err = internal.GetPemType(fileName)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			if p.Type != "RSA PRIVATE KEY" {
-				panicRed(fmt.Errorf("select only rsa private key file please"))
+				return panicRed(fmt.Errorf("select only rsa private key file please"))
 			}
 
 			block := p.Block
@@ -86,21 +86,22 @@ var (
 			if isEncrypted {
 				password, err := internal.AskInput("What is your password", 1)
 				if err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 
 				b, err := x509.DecryptPEMBlock(block, []byte(password))
 				if err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 
 				if err := writeUnlockedKey(fileName, b); err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 
 			} else {
-				panicRed(fmt.Errorf("this rsa private key file is not locked"))
+				return panicRed(fmt.Errorf("this rsa private key file is not locked"))
 			}
+			return nil
 		},
 	}
 )

@@ -17,7 +17,7 @@ var (
 		Use:   "zip",
 		Short: "Compress each file",
 		Long:  "Compress each file",
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			var (
 				certFile *internal.CertFile
 				err      error
@@ -31,18 +31,18 @@ var (
 
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			selectList, err := internal.AskMultiSelect("Choose the files to compress", certFile.Name)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			flags := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 			file, err := os.OpenFile(newFile, flags, 0644)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 			zipw := zip.NewWriter(file)
 			defer zipw.Close()
@@ -50,11 +50,12 @@ var (
 			if len(selectList) > 0 {
 				for _, filename := range selectList {
 					if err := internal.AppendFile(filename, zipw); err != nil {
-						panicRed(err)
+						return panicRed(err)
 					}
 				}
 				fmt.Printf(color.HiGreenString("📄 %s created successfully\n"), newFile)
 			}
+			return nil
 		},
 	}
 )

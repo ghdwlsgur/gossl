@@ -15,7 +15,7 @@ import (
 var (
 	_parseCrt = func(fileName string, pem *internal.Pem) error {
 		if len(pem.Data) <= 0 {
-			panicRed(fmt.Errorf("file content is empty"))
+			return panicRed(fmt.Errorf("file content is empty"))
 		}
 
 		question := fmt.Sprintf("%s %s %s, %s %s %s?",
@@ -33,18 +33,17 @@ var (
 		if strings.Split(answer, " ")[0] == "Yes" {
 			err = internal.CrtToCertificate(fileName, pem.Data)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 			fmt.Print(color.HiGreenString("✅ Converted successfully (crt -> pem)"))
-		} else {
-			os.Exit(1)
 		}
+		// "No" 를 고르면 변환하지 않고 그냥 끝낸다. 오류가 아니다.
 		return nil
 	}
 
 	_parsePrivateKey = func(fileName string, pem *internal.Pem) error {
 		if len(pem.Data) <= 0 {
-			panicRed(fmt.Errorf("file content is empty"))
+			return panicRed(fmt.Errorf("file content is empty"))
 		}
 
 		question := fmt.Sprintf("This is %s, Do you want to change to %s ?", color.HiRedString("PRIVATE KEY"), color.HiGreenString("RSA PRIVATE KEY"))
@@ -58,15 +57,14 @@ var (
 				return err
 			}
 			fmt.Print(color.HiGreenString("✅ Converted successfully (PRIVATE KEY -> RSA PRIVATE KEY)"))
-		} else {
-			os.Exit(1)
 		}
+		// "No" 를 고르면 변환하지 않고 그냥 끝낸다. 오류가 아니다.
 		return nil
 	}
 
 	_parseRsaPrivateKey = func(pem *internal.Pem) error {
 		if len(pem.Data) <= 0 {
-			panicRed(fmt.Errorf("file content is empty"))
+			return panicRed(fmt.Errorf("file content is empty"))
 		}
 		fmt.Println()
 		internal.PrintFunc("Type", color.HiRedString(pem.Type))
@@ -81,12 +79,12 @@ var (
 
 	_parseCertificate = func(certFile *internal.CertFile, pemBlockCount int, pem *internal.Pem) error {
 		if len(pem.Data) <= 0 {
-			panicRed(fmt.Errorf("file content is empty"))
+			return panicRed(fmt.Errorf("file content is empty"))
 		}
 
 		cert, err := x509.ParseCertificate(pem.Block.Bytes)
 		if err != nil {
-			panicRed(err)
+			return panicRed(err)
 		}
 
 		fmt.Printf(color.HiWhiteString("\n%s\n"), strings.Split(cert.Issuer.String(), ",")[0])
@@ -126,7 +124,7 @@ var (
 		Use:   "echo",
 		Short: "Show the contents of the certificate file/type and compare hashes.",
 		Long:  "Show the contents of the certificate file/type and compare hashes.",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				certFile *internal.CertFile
 				p        *internal.Pem
@@ -139,18 +137,18 @@ var (
 
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			// The user selects one of the list of certificates.
 			fileName, err := internal.AskSelect("Select Certificate File", certFile.Name)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			data, err := os.ReadFile(fileName)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			pemBlockCount := internal.CountPemBlock(bytes.TrimSpace(data))
@@ -161,23 +159,26 @@ var (
 			// Certificate type lookup
 			p, err = internal.GetPemType(fileName)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			switch p.Type {
 			case "PRIVATE KEY":
-				_parsePrivateKey(fileName, p)
+				err = _parsePrivateKey(fileName, p)
 			case "RSA PRIVATE KEY":
-				_parseRsaPrivateKey(p)
+				err = _parseRsaPrivateKey(p)
 			case "CERTIFICATE":
-				_parseCertificate(certFile, pemBlockCount, p)
+				err = _parseCertificate(certFile, pemBlockCount, p)
 			case "CRT":
-				_parseCrt(fileName, p)
-
+				err = _parseCrt(fileName, p)
 			default:
-				panicRed(fmt.Errorf("sorry, %s isn't supported", p.Type))
+				return panicRed(fmt.Errorf("sorry, %s isn't supported", p.Type))
+			}
+			if err != nil {
+				return err
 			}
 			fmt.Println()
+			return nil
 		},
 	}
 )

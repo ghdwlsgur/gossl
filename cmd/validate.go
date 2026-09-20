@@ -19,36 +19,37 @@ var (
 		Use:   "validate",
 		Short: "Check the certificate information applied to the domain.",
 		Long:  "Check the certificate information applied to the domain.",
-		Run: func(_ *cobra.Command, args []string) {
+		RunE: func(_ *cobra.Command, args []string) error {
 			var (
 				err error
 			)
 
 			domain, err := setDomain(args)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			checkHostErr := internal.GetHost(domain)
 			if checkHostErr != nil {
-				panicRed(checkHostErr)
+				return panicRed(checkHostErr)
 			}
 
 			ips, err := internal.GetRecordIPv4(domain)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			if len(ips) == 0 {
-				panicRed(fmt.Errorf("no IPv4 address found for %s, this domain may be IPv6 only", domain))
+				return panicRed(fmt.Errorf("no IPv4 address found for %s, this domain may be IPv6 only", domain))
 			}
 
 			for _, ip := range ips {
 				err = internal.GetCertificateInfo(ip, domain)
 				if err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 			}
+			return nil
 		},
 	}
 )

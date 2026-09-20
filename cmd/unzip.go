@@ -13,7 +13,7 @@ var (
 		Use:   "unzip",
 		Short: "Unzip the zip file extension.",
 		Long:  "Unzip the zip file extension.",
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			var (
 				zipFile *internal.ZipFile
 				err     error
@@ -21,12 +21,12 @@ var (
 
 			zipFile, err = internal.DirGrepZip()
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			fileName, err := internal.AskSelect("Select Zip File", zipFile.Name)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			newFileName := viper.GetString("unzip-file-name")
@@ -36,8 +36,9 @@ var (
 
 			err = internal.UnZip(fileName, newFileName)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
+			return nil
 		},
 	}
 )

@@ -56,7 +56,7 @@ var (
 		Use:   "split",
 		Short: "Split Unified Certificate.",
 		Long:  "Split Unified Certificate.",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				certFile               *internal.CertFile
 				p                      *internal.Pem
@@ -70,19 +70,19 @@ var (
 
 			if len(args) > 0 {
 				if args[0] != "show" || len(args) > 1 {
-					panicRed(fmt.Errorf("input format is incorrect. ex) gossl split show"))
+					return panicRed(fmt.Errorf("input format is incorrect. ex) gossl split show"))
 				}
 			}
 
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			for _, certificateFileName := range certFile.Name {
 				data, err := os.ReadFile(certificateFileName)
 				if err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 
 				pemBlockCount = internal.CountPemBlock(data)
@@ -93,12 +93,12 @@ var (
 			}
 
 			if len(selectList) < 1 {
-				panicRed(fmt.Errorf("a certificate file with pem block length greater than 2 does not exist"))
+				return panicRed(fmt.Errorf("a certificate file with pem block length greater than 2 does not exist"))
 			}
 
 			selectFile, err := internal.AskSelect("Select Certificate File", selectList)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			file := strings.TrimSpace(strings.Split(selectFile, "[")[0])
@@ -108,12 +108,12 @@ var (
 
 			data, err := os.ReadFile(file)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			p, err = internal.GetPemType(file)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			leafBlock := []*pem.Block{}
@@ -135,7 +135,7 @@ var (
 				p.Block = block
 				detail, err := internal.DistinguishCertificate(p, certFile, 1)
 				if err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 
 				fmt.Printf("\t ➕ %s\n", color.HiWhiteString(detail))
@@ -145,7 +145,7 @@ var (
 					leafBlock = append(leafBlock, block)
 					subIss, err := internal.GetSubjectCNandIssuerCN(block)
 					if err != nil {
-						panicRed(err)
+						return panicRed(err)
 					}
 					leafSubIss = append(leafSubIss, subIss...)
 					leafBlockCount++
@@ -153,7 +153,7 @@ var (
 					intermediateBlock = append(intermediateBlock, block)
 					subIss, err := internal.GetSubjectCNandIssuerCN(block)
 					if err != nil {
-						panicRed(err)
+						return panicRed(err)
 					}
 					intermediateSubIss = append(intermediateSubIss, subIss...)
 					intermediateBlockCount++
@@ -161,7 +161,7 @@ var (
 					rootBlock = append(rootBlock, block)
 					subIss, err := internal.GetSubjectCNandIssuerCN(block)
 					if err != nil {
-						panicRed(err)
+						return panicRed(err)
 					}
 					rootSubIss = append(rootSubIss, subIss...)
 					rootBlockCount++
@@ -193,15 +193,16 @@ var (
 			if len(args) < 1 {
 				fmt.Printf("\n%s\n", color.HiWhiteString("Created Files"))
 				if err := saveFile(leafBlock, "leaf", leafBlockCount); err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 				if err := saveFile(intermediateBlock, "intermediate", intermediateBlockCount); err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 				if err := saveFile(rootBlock, "root", rootBlockCount); err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 			}
+			return nil
 		},
 	}
 )

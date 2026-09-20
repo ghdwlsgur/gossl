@@ -1,11 +1,7 @@
 package cmd
 
 import (
-	"crypto/sha256"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
 
@@ -42,86 +38,30 @@ var (
 	}
 )
 
-func panicRed(err error) {
-	fmt.Println(color.RedString("[err] %s", err.Error()))
-	os.Exit(1)
+// panicRed 는 오류를 붉게 감싸 반환한다.
+//
+// 예전에는 여기서 os.Exit(1) 을 불렀다. 오류 경로마다 프로세스가 죽어
+// 테스트가 그 줄을 지날 수 없었고, defer 도 실행되지 않았다. 이제 오류를
+// 돌려주고 최종 종료는 Execute 한 곳에서만 한다.
+func panicRed(err error) error {
+	return fmt.Errorf("%s", color.RedString("[err] %s", err.Error()))
 }
 
 func Execute(version string) {
 	rootCmd.Version = version
+	rootCmd.SilenceErrors = true
+	rootCmd.SilenceUsage = true
+
 	if err := rootCmd.Execute(); err != nil {
-		panicRed(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
-
-func updateConfig() error {
-
-	localConfigData, err := os.ReadFile(_defaultYamlConfigPath)
-	if err != nil {
-		return err
-	}
-
-	resp, err := http.Get(_configURL)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	remoteConfigData, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	localHash := sha256.Sum256(localConfigData)
-	remoteHash := sha256.Sum256(remoteConfigData)
-
-	if localHash != remoteHash {
-		ioutil.WriteFile(_defaultYamlConfigPath, remoteConfigData, _configFileMode)
-	}
-	return nil
-}
-
-func createConfigFile() {
-	err := os.Mkdir(path, _configFileMode)
-	if err != nil {
-		panicRed(err)
-	}
-
-	resp, err := http.Get(_configURL)
-	if err != nil {
-		panicRed(err)
-	}
-	defer resp.Body.Close()
-
-	configFile, err := os.Create(_defaultYamlConfigPath)
-	if err != nil {
-		panicRed(err)
-	}
-	defer configFile.Close()
-
-	_, err = io.Copy(configFile, resp.Body)
-	if err != nil {
-		panicRed(err)
-	}
-}
-
-// func configDownload() {
-// 	if _, err := os.Stat(_defaultYamlConfigPath); errors.Is(err, os.ErrNotExist) {
-// 		// create folder: /opt/homebrew/lib/gossl
-// 		createConfigFile()
-// 	} else {
-// 		// create file: /opt/homebrew/lib/gossl/config.yaml
-// 		updateConfig()
-// 	}
-// }
 
 func initConfig() {
-	// configDownload()
-
-	args := os.Args[1:]
-	_, _, err := rootCmd.Find(args)
-	if err != nil {
-		panicRed(err)
+	if _, _, err := rootCmd.Find(os.Args[1:]); err != nil {
+		fmt.Println(panicRed(err))
+		os.Exit(1)
 	}
 }
 

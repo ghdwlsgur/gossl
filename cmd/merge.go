@@ -17,7 +17,7 @@ var (
 		Use:   "merge",
 		Short: "Combine each certificate file in order of leaf, intermediate, root.",
 		Long:  "Combine each certificate file in order of leaf, intermediate, root.",
-		Run: func(_ *cobra.Command, _ []string) {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			var (
 				certFile *internal.CertFile
 				p        *internal.Pem
@@ -32,26 +32,26 @@ var (
 
 			certFile, err = internal.DirGrepX509()
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			selectList, err := internal.AskMultiSelect("Select Certificate File", certFile.Name)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 
 			n := len(selectList)
 			if n > 4 {
-				panicRed(fmt.Errorf("please select up to 4"))
+				return panicRed(fmt.Errorf("please select up to 4"))
 			}
 
 			if n < 2 {
-				panicRed(fmt.Errorf("please select at least 2"))
+				return panicRed(fmt.Errorf("please select at least 2"))
 			}
 
 			file, err := os.Create(newFile)
 			if err != nil {
-				panicRed(err)
+				return panicRed(err)
 			}
 			defer file.Close()
 
@@ -67,16 +67,16 @@ var (
 
 				data, err := os.ReadFile(selectCert)
 				if err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 
 				if !flagF {
 					if b, _ := pem.Decode(data); b != nil {
 						if b.Type == "RSA PRIVATE KEY" {
-							panicRed(fmt.Errorf("please select only the certificate file"))
+							return panicRed(fmt.Errorf("please select only the certificate file"))
 						}
 					} else {
-						panicRed(fmt.Errorf("%s is empty", selectCert))
+						return panicRed(fmt.Errorf("%s is empty", selectCert))
 					}
 				} else {
 					if b, _ := pem.Decode(data); b != nil {
@@ -84,13 +84,13 @@ var (
 							privateBlock = append(privateBlock, b)
 						}
 					} else {
-						panicRed(fmt.Errorf("%s is empty", selectCert))
+						return panicRed(fmt.Errorf("%s is empty", selectCert))
 					}
 				}
 
 				p, err = internal.GetPemType(selectCert)
 				if err != nil {
-					panicRed(err)
+					return panicRed(err)
 				}
 
 				pemBlockCount := internal.CountPemBlock(data)
@@ -98,12 +98,12 @@ var (
 				if p.Type != "RSA PRIVATE KEY" {
 					detail, err := internal.DistinguishCertificate(p, certFile, pemBlockCount)
 					if err != nil {
-						panicRed(err)
+						return panicRed(err)
 					}
 
 					typeOfCertificate := strings.TrimSpace(strings.Split(detail, " ")[0])
 					if typeOfCertificate == "Unified" {
-						panicRed(fmt.Errorf("%s is already merged certificate file, please choose another file", selectCert))
+						return panicRed(fmt.Errorf("%s is already merged certificate file, please choose another file", selectCert))
 					}
 
 					for {
@@ -137,11 +137,12 @@ var (
 			for i := 0; i < len(blockBucket); i++ {
 				for _, block := range blockBucket[i] {
 					if err := pem.Encode(file, block); err != nil {
-						panicRed(err)
+						return panicRed(err)
 					}
 				}
 			}
 			fmt.Printf(color.HiGreenString("📄 %s created successfully\n"), newFile)
+			return nil
 		},
 	}
 )
