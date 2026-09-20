@@ -1,3 +1,4 @@
+version: 2
 project_name: gossl
 before:
   hooks:
@@ -13,8 +14,6 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=0
-    flags:
-      - -mod=vendor
     asmflags:
       - all=-trimpath={{.Env.GOPATH}}
     gcflags:
@@ -26,7 +25,7 @@ builds:
       - goos: windows
         goarch: arm64
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     name_template: >-
       {{ .ProjectName }}_
       {{- .Version }}_
@@ -51,6 +50,7 @@ brews:
     repository:
       owner: ghdwlsgur
       name: homebrew-gossl
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
     commit_author:
       name: ghdwlsgur
       email: vjinhyeokv@gmail.com
