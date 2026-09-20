@@ -242,21 +242,18 @@ func GetCertificateInfo(ip string, domain string) error {
 	return nil
 }
 
-func CountPemBlock(bytes []byte) int {
-	var pemBlockCount int
+// CountPemBlock 은 입력에 들어 있는 PEM 블록의 개수를 센다.
+// 후행 개행이나 공백은 블록으로 세지 않는다.
+func CountPemBlock(data []byte) int {
+	count := 0
 
 	for {
 		var block *pem.Block
-		block, bytes = pem.Decode(bytes)
-
-		pemBlockCount++
-
+		block, data = pem.Decode(data)
 		if block == nil {
-			return pemBlockCount
+			return count
 		}
-		if len(bytes) == 0 {
-			return pemBlockCount
-		}
+		count++
 	}
 }
 
