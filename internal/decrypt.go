@@ -10,6 +10,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -223,13 +224,14 @@ func PrivateToRsaPrivate(newFileName string, pemBlock *pem.Block) error {
 	return newFile.Close()
 }
 
-func CrtToCertificate(FileName string, bytes []byte) error {
+func CrtToCertificate(fileName string, bytes []byte) error {
 	crt, err := x509.ParseCertificate(bytes)
 	if err != nil {
 		return err
 	}
 
-	newFileName := fmt.Sprintf(strings.Split(FileName, ".")[0] + ".pem")
+	// 첫 점이 아니라 마지막 확장자만 바꾼다. my.site.2026.crt -> my.site.2026.pem
+	newFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName)) + ".pem"
 	newFile, err := os.Create(newFileName)
 	if err != nil {
 		return err
@@ -243,5 +245,5 @@ func CrtToCertificate(FileName string, bytes []byte) error {
 		return err
 	}
 
-	return nil
+	return newFile.Close()
 }

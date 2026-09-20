@@ -13,6 +13,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -295,5 +296,26 @@ func TestPrivateToRsaPrivate_NonRsaReturnsError(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "out.key")
 	if err := PrivateToRsaPrivate(out, &pem.Block{Type: "PRIVATE KEY", Bytes: der}); err == nil {
 		t.Error("EC 키를 RSA 로 변환하려 했는데 오류를 반환하지 않았다")
+	}
+}
+
+// 파일명에 점이 여러 개면 첫 점에서 잘려 엉뚱한 경로에 썼다.
+func TestCrtToCertificate_FileNameWithDots(t *testing.T) {
+	k, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	der := newCert(t, false, []string{"d.com"}, "d", &k.PublicKey, k)
+
+	dir := t.TempDir()
+	src := filepath.Join(dir, "my.site.2026.crt")
+	if err := os.WriteFile(src, der, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CrtToCertificate(src, der); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "my.site.2026.pem")); err != nil {
+		t.Errorf("기대한 경로에 파일이 없다: my.site.2026.pem")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "my.pem")); err == nil {
+		t.Error("첫 점 기준으로 잘려 my.pem 이 생성됐다")
 	}
 }
