@@ -16,6 +16,7 @@
 /dist/
 /gossl
 gossl.exe
+/genroots
 *.exe
 
 # 테스트 산출물
