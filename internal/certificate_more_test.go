@@ -384,13 +384,20 @@ func TestCertificateInfoOverNetwork(t *testing.T) {
 	}
 }
 
-func TestParsingYaml_Remote(t *testing.T) {
-	if testing.Short() {
-		t.Skip("네트워크가 필요해 건너뜀")
-	}
+// 목록이 바이너리에 실려 있으므로 네트워크가 필요 없다.
+func TestParsingYaml_Embedded(t *testing.T) {
 	var r RootYaml
 	if err := ParsingYaml(&r); err != nil {
-		t.Skipf("원격 yaml 을 받지 못했다: %v", err)
+		t.Fatalf("내장 목록을 읽지 못했다: %v", err)
+	}
+	if r.Root.LastModified == 0 {
+		t.Error("lastModified 가 비어 있다")
+	}
+	if len(r.Root.Metadata) != 143 {
+		t.Errorf("항목 수 = %d, 기대 143", len(r.Root.Metadata))
+	}
+	if u := r.Root.FindURL("DigiCert Global Root G2"); u == "" || u == "No Data" {
+		t.Errorf("알려진 항목을 찾지 못했다: %q", u)
 	}
 	if len(r.Root.Metadata) == 0 {
 		t.Error("metadata 가 비어 있다")

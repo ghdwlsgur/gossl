@@ -1,5 +1,5 @@
 root:
-  lastModified: 20230331
+  lastModified: 20230727
   metadata:
     - name: Baltimore CyberTrust Root
       url: https://cacerts.digicert.com/BaltimoreCyberTrustRoot.crt.pem

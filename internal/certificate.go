@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"github.com/ghdwlsgur/gossl/config"
+
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -16,12 +18,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/go-resty/resty/v2"
 	"gopkg.in/yaml.v3"
-)
-
-const (
-	rootCertificateDownloadUrl = "https://ghdwlsgur.github.io/files/root_cert_config.yaml"
 )
 
 type x509Certificate struct {
@@ -346,26 +343,18 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 	return leafFormat, nil
 }
 
+// ParsingYaml 은 바이너리에 실린 루트 인증서 목록을 읽는다.
+//
+// 예전에는 매 호출마다 https://ghdwlsgur.github.io/files/root_cert_config.yaml
+// 을 받아왔다. 목록이 외부 호스팅에 묶여 있어 그 파일이 사라지면 기능이
+// 멈췄고, 저장소의 config/rootSSL.yaml 과 원격 사본이 서로 갈라져 있었다.
 func ParsingYaml(yamlObject *RootYaml) error {
-
-	client := resty.New()
-
-	resp, err := client.R().
-		SetHeader("Referer", "https://ghdwlsgur.github.io/").
-		SetHeader("Content-Type", "application/yaml").
-		Get(rootCertificateDownloadUrl)
-	if err != nil {
-		return fmt.Errorf("failed to download root certificate list: %w", err)
+	if err := yaml.Unmarshal(config.RootSSL, yamlObject); err != nil {
+		return fmt.Errorf("failed to parse embedded root certificate list: %w", err)
 	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("failed to download root certificate list: status %d", resp.StatusCode())
+	if len(yamlObject.Root.Metadata) == 0 {
+		return fmt.Errorf("embedded root certificate list is empty")
 	}
-
-	if err := yaml.Unmarshal(resp.Body(), yamlObject); err != nil {
-		return err
-	}
-
 	return nil
 }
 
