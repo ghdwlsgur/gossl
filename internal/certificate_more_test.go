@@ -7,13 +7,9 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"io"
 	"net"
-	"net/http"
-	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -39,43 +35,6 @@ func captureStdout(t *testing.T, f func()) string {
 	w.Close()
 	os.Stdout = old
 	return <-done
-}
-
-func sampleYaml() YamlData {
-	return YamlData{
-		LastModified: 20230727,
-		Metadata: []Metadata{
-			{Name: "With URL", Url: "https://example.com/a.crt"},
-			{Name: "No URL", Url: ""},
-			{Name: "Another", Url: "https://example.com/b.crt"},
-		},
-	}
-}
-
-func TestYamlAccessors(t *testing.T) {
-	y := sampleYaml()
-
-	names := y.GetNameListOwnURL()
-	if len(names) != 2 || names[0] != "With URL" || names[1] != "Another" {
-		t.Errorf("GetNameListOwnURL = %v, URL 이 있는 항목만 와야 한다", names)
-	}
-
-	urls := y.GetURLListOwnURL()
-	if len(urls) != 2 || urls[0] != "https://example.com/a.crt" {
-		t.Errorf("GetURLListOwnURL = %v", urls)
-	}
-
-	if got := y.FindURL("Another"); got != "https://example.com/b.crt" {
-		t.Errorf("FindURL(Another) = %q", got)
-	}
-	if got := y.FindURL("없는 이름"); got != "No Data" {
-		t.Errorf("FindURL(없는 이름) = %q, 기대 \"No Data\"", got)
-	}
-
-	m := y.Metadata[0]
-	if m.getName() != "With URL" || m.getUrl() != "https://example.com/a.crt" {
-		t.Error("Metadata 접근자가 값을 잘못 돌려준다")
-	}
 }
 
 func TestX509CertificateAccessors(t *testing.T) {
@@ -180,61 +139,6 @@ func TestPrintFuncs(t *testing.T) {
 			t.Errorf("PrintSplitFunc 출력에 %q 가 없다: %q", want, out)
 		}
 	}
-}
-
-func TestDownloadCertificate(t *testing.T) {
-	body := "-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----\n"
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/missing") {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		fmt.Fprint(w, body)
-	}))
-	defer srv.Close()
-
-	dir := t.TempDir()
-	chdir(t, dir)
-
-	t.Run("정상 다운로드", func(t *testing.T) {
-		if err := DownloadCertificate(srv.URL+"/ok", "root.crt"); err != nil {
-			t.Fatal(err)
-		}
-		got, err := os.ReadFile(filepath.Join(dir, "root.crt"))
-		if err != nil || string(got) != body {
-			t.Errorf("내용이 다르다: %q (%v)", got, err)
-		}
-	})
-
-	t.Run("404 는 저장하지 않는다", func(t *testing.T) {
-		if err := DownloadCertificate(srv.URL+"/missing", "notfound.crt"); err == nil {
-			t.Error("404 인데 오류를 반환하지 않았다")
-		}
-	})
-
-	t.Run("상위 경로 탈출 차단", func(t *testing.T) {
-		if err := DownloadCertificate(srv.URL+"/ok", "../escaped.crt"); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := os.Stat(filepath.Join(dir, "escaped.crt")); err != nil {
-			t.Error("파일명만 취해 현재 디렉토리에 저장돼야 한다")
-		}
-		if _, err := os.Stat(filepath.Join(filepath.Dir(dir), "escaped.crt")); err == nil {
-			t.Error("상위 디렉토리에 파일이 생성됐다")
-		}
-	})
-
-	t.Run("잘못된 출력 파일명", func(t *testing.T) {
-		if err := DownloadCertificate(srv.URL+"/ok", "/"); err == nil {
-			t.Error("경로 구분자만 준 경우 오류여야 한다")
-		}
-	})
-
-	t.Run("접속 불가", func(t *testing.T) {
-		if err := DownloadCertificate("http://127.0.0.1:1/x", "x.crt"); err == nil {
-			t.Error("접속 실패인데 오류를 반환하지 않았다")
-		}
-	})
 }
 
 func TestSetTransportPinsIP(t *testing.T) {
@@ -381,28 +285,5 @@ func TestCertificateInfoOverNetwork(t *testing.T) {
 	}
 	if err := GetCertificateInfo("", "this-domain-does-not-exist.invalid"); err == nil {
 		t.Error("없는 도메인인데 오류를 반환하지 않았다")
-	}
-}
-
-// 목록이 바이너리에 실려 있으므로 네트워크가 필요 없다.
-func TestParsingYaml_Embedded(t *testing.T) {
-	var r RootYaml
-	if err := ParsingYaml(&r); err != nil {
-		t.Fatalf("내장 목록을 읽지 못했다: %v", err)
-	}
-	if r.Root.LastModified == 0 {
-		t.Error("lastModified 가 비어 있다")
-	}
-	if len(r.Root.Metadata) != 143 {
-		t.Errorf("항목 수 = %d, 기대 143", len(r.Root.Metadata))
-	}
-	if u := r.Root.FindURL("DigiCert Global Root G2"); u == "" || u == "No Data" {
-		t.Errorf("알려진 항목을 찾지 못했다: %q", u)
-	}
-	if len(r.Root.Metadata) == 0 {
-		t.Error("metadata 가 비어 있다")
-	}
-	if len(r.Root.GetNameListOwnURL()) == 0 {
-		t.Error("URL 을 가진 항목이 하나도 없다")
 	}
 }

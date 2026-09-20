@@ -515,3 +515,49 @@ func TestCrtToCertificate_Invalid(t *testing.T) {
 		t.Error("파싱 불가한 DER 인데 오류를 반환하지 않았다")
 	}
 }
+
+// Go 는 SHA-1 서명 검증을 거부한다. 서명이 틀린 게 아니라 알고리즘이
+// 안전하지 않다는 뜻인데, 이를 자기 서명 실패로 취급하면 아직 신뢰
+// 저장소에 남아 있는 SHA1-RSA 루트가 중간 인증서로 분류된다.
+func TestIsSelfSigned_Sha1Roots(t *testing.T) {
+	roots, err := RootCertificates()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checked := 0
+	for _, r := range roots {
+		if r.Certificate.SignatureAlgorithm != x509.SHA1WithRSA {
+			continue
+		}
+		checked++
+		if !isSelfSigned(r.Certificate) {
+			t.Errorf("%s (SHA1-RSA) 를 자기 서명으로 인식하지 못했다", r.Name)
+		}
+		if got := DistinguishCertificateWithConnection(r.Certificate); got != "Root Certificate" {
+			t.Errorf("%s: 판정 = %q, 기대 Root Certificate", r.Name, got)
+		}
+	}
+	if checked == 0 {
+		t.Skip("번들에 SHA1-RSA 루트가 없다")
+	}
+	t.Logf("SHA1-RSA 루트 %d개 확인", checked)
+}
+
+// 키 식별자가 어긋나면 자기 서명으로 보지 않는다.
+func TestSelfIssuedByKeyID(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		akid, skid []byte
+		want       bool
+	}{
+		{"AKID 없음", nil, []byte{1, 2, 3}, true},
+		{"AKID == SKID", []byte{1, 2, 3}, []byte{1, 2, 3}, true},
+		{"AKID != SKID", []byte{9, 9, 9}, []byte{1, 2, 3}, false},
+	} {
+		got := selfIssuedByKeyID(&x509.Certificate{AuthorityKeyId: tc.akid, SubjectKeyId: tc.skid})
+		if got != tc.want {
+			t.Errorf("%s: selfIssuedByKeyID = %v, 기대 %v", tc.name, got, tc.want)
+		}
+	}
+}

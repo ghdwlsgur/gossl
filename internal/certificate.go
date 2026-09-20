@@ -1,24 +1,20 @@
 package internal
 
 import (
-	"github.com/ghdwlsgur/gossl/config"
-
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
-	"gopkg.in/yaml.v3"
 )
 
 type x509Certificate struct {
@@ -37,57 +33,6 @@ type Connection struct {
 
 func (c Connection) getTransport() *http.Transport {
 	return c.transport
-}
-
-type RootYaml struct {
-	Root YamlData `yaml:"root"`
-}
-
-type YamlData struct {
-	LastModified int        `yaml:"lastModified"`
-	Metadata     []Metadata `yaml:"metadata"`
-}
-
-type Metadata struct {
-	Name string `yaml:"name"`
-	Url  string `yaml:"url"`
-}
-
-func (m Metadata) getName() string {
-	return m.Name
-}
-
-func (m Metadata) getUrl() string {
-	return m.Url
-}
-
-func (y YamlData) GetNameListOwnURL() []string {
-	var result []string
-	for _, metadata := range y.Metadata {
-		if len(metadata.getUrl()) > 0 {
-			result = append(result, metadata.getName())
-		}
-	}
-	return result
-}
-
-func (y YamlData) GetURLListOwnURL() []string {
-	var result []string
-	for _, metadata := range y.Metadata {
-		if len(metadata.getUrl()) > 0 {
-			result = append(result, metadata.getUrl())
-		}
-	}
-	return result
-}
-
-func (y YamlData) FindURL(name string) string {
-	for _, metadata := range y.Metadata {
-		if metadata.getName() == name {
-			return metadata.getUrl()
-		}
-	}
-	return "No Data"
 }
 
 func (c x509Certificate) getSubject() pkix.Name {
@@ -301,7 +246,31 @@ func isSelfSigned(cert *x509.Certificate) bool {
 	if cert.Subject.String() != cert.Issuer.String() {
 		return false
 	}
-	return cert.CheckSignatureFrom(cert) == nil
+
+	err := cert.CheckSignatureFrom(cert)
+	if err == nil {
+		return true
+	}
+
+	// Go 는 SHA-1 서명 검증을 거부한다. 서명이 틀린 것이 아니라 알고리즘이
+	// 더 이상 안전하지 않다는 뜻이므로 자기 서명 여부의 근거가 되지 못한다.
+	// 아직 신뢰 저장소에 남아 있는 옛 루트 중 SHA1-RSA 로 서명된 것들이
+	// 있어서, 이 경우에는 키 식별자로 판단한다.
+	var insecure x509.InsecureAlgorithmError
+	if errors.As(err, &insecure) {
+		return selfIssuedByKeyID(cert)
+	}
+	return false
+}
+
+// selfIssuedByKeyID 는 서명을 검증할 수 없을 때 쓰는 보조 판단이다.
+// 루트는 자기 자신이 발급자이므로 Authority Key Identifier 가
+// Subject Key Identifier 와 같거나, 아예 없다.
+func selfIssuedByKeyID(cert *x509.Certificate) bool {
+	if len(cert.AuthorityKeyId) == 0 {
+		return true
+	}
+	return bytes.Equal(cert.AuthorityKeyId, cert.SubjectKeyId)
 }
 
 func DistinguishCertificateWithConnection(cert *x509.Certificate) string {
@@ -341,57 +310,6 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 	leafFormat := fmt.Sprintf("%s [in %d block]", "Leaf Certificate", pemBlockCount)
 	// Leaf Certificate
 	return leafFormat, nil
-}
-
-// ParsingYaml 은 바이너리에 실린 루트 인증서 목록을 읽는다.
-//
-// 예전에는 매 호출마다 https://ghdwlsgur.github.io/files/root_cert_config.yaml
-// 을 받아왔다. 목록이 외부 호스팅에 묶여 있어 그 파일이 사라지면 기능이
-// 멈췄고, 저장소의 config/rootSSL.yaml 과 원격 사본이 서로 갈라져 있었다.
-func ParsingYaml(yamlObject *RootYaml) error {
-	if err := yaml.Unmarshal(config.RootSSL, yamlObject); err != nil {
-		return fmt.Errorf("failed to parse embedded root certificate list: %w", err)
-	}
-	if len(yamlObject.Root.Metadata) == 0 {
-		return fmt.Errorf("embedded root certificate list is empty")
-	}
-	return nil
-}
-
-func DownloadCertificate(url string, out string) error {
-
-	dir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	// out 은 사용자 입력이므로 상위 경로로 빠져나가지 못하게 파일명만 취한다.
-	name := filepath.Base(filepath.Clean(out))
-	if name == "." || name == string(filepath.Separator) {
-		return fmt.Errorf("invalid output file name: %q", out)
-	}
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download %s: status %s", url, resp.Status)
-	}
-
-	result, err := os.Create(filepath.Join(dir, name))
-	if err != nil {
-		return err
-	}
-	defer result.Close()
-
-	if _, err = io.Copy(result, resp.Body); err != nil {
-		return err
-	}
-
-	return result.Close()
 }
 
 func GetSubjectCNandIssuerCN(pem *pem.Block) ([]string, error) {
