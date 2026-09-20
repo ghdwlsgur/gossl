@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 )
 
@@ -35,72 +34,21 @@ func getAnswer[T ReturnType](w *Wrapper[T]) *T {
 	return w.value
 }
 
-func AskMultiSelect(Message string, Options []string) ([]string, error) {
-
-	prompt := &survey.MultiSelect{
-		Message: Message,
-		Options: Options,
-	}
-
-	answer := []string{}
-	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
-		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(len(Options))); err != nil {
-		return nil, nil
-	}
-
-	n := newField(AnswerList{
-		Name: answer,
-	})
-
-	return getAnswer(n).Name, nil
+// AskMultiSelect 는 여러 개를 고르게 한다.
+func AskMultiSelect(message string, options []string) ([]string, error) {
+	return prompter.MultiSelect(message, options)
 }
 
-func AskInput(Message string, PageSize int) (string, error) {
-
-	prompt := &survey.Input{
-		Message: Message,
-	}
-
-	answer := ""
-	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
-		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(PageSize)); err != nil {
-		return "", err
-	}
-
-	n := newField(Answer{
-		Name: answer,
-	})
-
-	return getAnswer(n).Name, nil
+// AskInput 은 자유 입력을 받는다.
+// pageSize 는 입력 프롬프트에 의미가 없어 무시한다. 호출부 호환을 위해 남겨 둔다.
+func AskInput(message string, pageSize int) (string, error) {
+	_ = pageSize
+	return prompter.Input(message)
 }
 
-func AskSelect(Message string, Options []string) (string, error) {
-	prompt := &survey.Select{
-		Message: Message,
-		Options: Options,
-	}
-
-	answer := ""
-	var pageSize int
-	if len(Options) > 10 {
-		pageSize = 10
-	} else {
-		pageSize = len(Options)
-	}
-
-	if err := survey.AskOne(prompt, &answer, survey.WithIcons(func(icons *survey.IconSet) {
-		icons.SelectFocus.Format = "green+hb"
-	}), survey.WithPageSize(pageSize)); err != nil {
-		return "", err
-	}
-
-	n := newField(Answer{
-		Name: answer,
-	})
-
-	return getAnswer(n).Name, nil
+// AskSelect 는 하나를 고르게 한다.
+func AskSelect(message string, options []string) (string, error) {
+	return prompter.Select(message, options)
 }
 
 func PrintSplitFunc(field, value string) {
