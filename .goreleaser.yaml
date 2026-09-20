@@ -14,10 +14,10 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=0
-    asmflags:
-      - all=-trimpath={{.Env.GOPATH}}
-    gcflags:
-      - all=-trimpath={{.Env.GOPATH}}
+    flags:
+      # 예전에는 asmflags/gcflags 에 all=-trimpath={{.Env.GOPATH}} 를 줬는데
+      # GOPATH 가 없는 환경에서는 템플릿이 실패한다. go 자체 플래그를 쓴다.
+      - -trimpath
     ldflags:
       - -s -w
       - -X main.gosslVersion={{.Version}}
