@@ -42,17 +42,31 @@ type root struct {
 }
 
 func main() {
-	out := flag.String("o", "config/roots.pem", "생성할 번들 경로")
-	src := flag.String("url", ccadbURL, "CCADB CSV 주소")
-	flag.Parse()
-
-	if err := run(*src, *out); err != nil {
-		fmt.Fprintln(os.Stderr, "genroots:", err)
-		os.Exit(1)
+	if code := runMain(os.Args[1:], os.Stdout, os.Stderr); code != 0 {
+		os.Exit(code)
 	}
 }
 
-func run(src, out string) error {
+// runMain 은 인자를 해석하고 종료 코드를 돌려준다.
+// 프로세스를 끝내지 않으므로 테스트가 직접 부를 수 있다.
+func runMain(args []string, out, errOut io.Writer) int {
+	fs := flag.NewFlagSet("genroots", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	dst := fs.String("o", "config/roots.pem", "생성할 번들 경로")
+	src := fs.String("url", ccadbURL, "CCADB CSV 주소")
+
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	if err := run(*src, *dst, out); err != nil {
+		fmt.Fprintln(errOut, "genroots:", err)
+		return 1
+	}
+	return 0
+}
+
+func run(src, dst string, out io.Writer) error {
 	records, err := fetch(src)
 	if err != nil {
 		return err
@@ -68,11 +82,11 @@ func run(src, out string) error {
 
 	sort.Slice(roots, func(i, j int) bool { return roots[i].name < roots[j].name })
 
-	if err := write(out, roots); err != nil {
+	if err := write(dst, roots); err != nil {
 		return err
 	}
 
-	fmt.Printf("%s 생성: 루트 %d개 (제외 %d개)\n", out, len(roots), skipped)
+	fmt.Fprintf(out, "%s 생성: 루트 %d개 (제외 %d개)\n", dst, len(roots), skipped)
 	return nil
 }
 

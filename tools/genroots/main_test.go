@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -205,20 +206,82 @@ func TestFetchAndRun(t *testing.T) {
 	defer srv.Close()
 
 	out := filepath.Join(t.TempDir(), "roots.pem")
-	if err := run(srv.URL+"/ok", out); err != nil {
+	if err := run(srv.URL+"/ok", out, io.Discard); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 	if _, err := os.Stat(out); err != nil {
 		t.Errorf("번들이 생성되지 않았다: %v", err)
 	}
 
-	if err := run(srv.URL+"/bad", out); err == nil {
+	if err := run(srv.URL+"/bad", out, io.Discard); err == nil {
 		t.Error("500 응답인데 오류를 반환하지 않았다")
 	}
-	if err := run(srv.URL+"/empty", out); err == nil {
+	if err := run(srv.URL+"/empty", out, io.Discard); err == nil {
 		t.Error("데이터가 없는데 오류를 반환하지 않았다")
 	}
-	if err := run("http://127.0.0.1:1/x", out); err == nil {
+	if err := run("http://127.0.0.1:1/x", out, io.Discard); err == nil {
 		t.Error("접속 실패인데 오류를 반환하지 않았다")
 	}
+}
+
+func TestRunMain(t *testing.T) {
+	p, fp := makeRoot(t, "Main Root", time.Now().AddDate(5, 0, 0))
+	csv := fmt.Sprintf("\"Owner\",\"Common Name or Certificate Name\",\"SHA-256 Fingerprint\",\"Trust Bits\",\"Distrust for TLS After Date\",\"PEM Info\"\n"+
+		"\"Test\",\"Main Root\",\"%s\",\"Websites\",\"\",\"'%s'\"\n", fp, p)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/bad" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprint(w, csv)
+	}))
+	defer srv.Close()
+
+	out := filepath.Join(t.TempDir(), "roots.pem")
+
+	t.Run("정상", func(t *testing.T) {
+		var stdout, stderr strings.Builder
+		if code := runMain([]string{"-url", srv.URL + "/ok", "-o", out}, &stdout, &stderr); code != 0 {
+			t.Fatalf("종료 코드 = %d, stderr=%s", code, stderr.String())
+		}
+		if !strings.Contains(stdout.String(), "루트 1개") {
+			t.Errorf("stdout = %q", stdout.String())
+		}
+	})
+
+	t.Run("생성 실패", func(t *testing.T) {
+		var stdout, stderr strings.Builder
+		if code := runMain([]string{"-url", srv.URL + "/bad", "-o", out}, &stdout, &stderr); code != 1 {
+			t.Errorf("종료 코드 = %d, 기대 1", code)
+		}
+		if !strings.Contains(stderr.String(), "genroots:") {
+			t.Errorf("stderr = %q", stderr.String())
+		}
+	})
+
+	t.Run("잘못된 인자", func(t *testing.T) {
+		var stdout, stderr strings.Builder
+		if code := runMain([]string{"-nosuchflag"}, &stdout, &stderr); code != 2 {
+			t.Errorf("종료 코드 = %d, 기대 2", code)
+		}
+	})
+}
+
+// main 은 성공하면 os.Exit 을 부르지 않으므로 테스트가 부를 수 있다.
+func TestMainEntrypoint(t *testing.T) {
+	p, fp := makeRoot(t, "Entry Root", time.Now().AddDate(5, 0, 0))
+	csv := fmt.Sprintf("\"Owner\",\"Common Name or Certificate Name\",\"SHA-256 Fingerprint\",\"Trust Bits\",\"Distrust for TLS After Date\",\"PEM Info\"\n"+
+		"\"Test\",\"Entry Root\",\"%s\",\"Websites\",\"\",\"'%s'\"\n", fp, p)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, csv)
+	}))
+	defer srv.Close()
+
+	old := os.Args
+	defer func() { os.Args = old }()
+	os.Args = []string{"genroots", "-url", srv.URL, "-o", filepath.Join(t.TempDir(), "roots.pem")}
+
+	main()
 }
