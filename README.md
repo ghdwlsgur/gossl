@@ -55,6 +55,11 @@ The tool displays a list of files with extensions ending in `pem, crt, ca, csr, 
 
 The option is provided to convert a `crt` file to `pem` format.
 
+For RSA keys the `Md5 Hash` matches `openssl x509 -noout -modulus | openssl md5`,
+so a certificate and a private key belong together when the two hashes are equal.
+ECDSA and Ed25519 keys are hashed from their PKIX public key, which openssl has no
+direct equivalent for, but the same cert/key comparison still holds.
+
 ```bash
 gossl echo
 ```
@@ -104,8 +109,11 @@ gossl unzip -n [fileName]
 
 If the domain uses a CDN, it retrieves the domain certificate information applied to each edge device. If not, it retrieves the domain certificate information applied to the origin server.
 
+Each IPv4 address behind the domain is contacted directly, with SNI set to the
+domain name, so you can compare what every edge actually serves.
+
 ```bash
-gossl validate -n [domain]
+gossl validate [domain]
 ```
 
 ### `check`
