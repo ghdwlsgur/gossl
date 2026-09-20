@@ -13,6 +13,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -200,4 +202,55 @@ func TestPrivateKeyFormats(t *testing.T) {
 			t.Error("무관한 인증서와 키가 일치로 판정됐다")
 		}
 	})
+}
+
+// RSA 해시는 `openssl x509 -noout -modulus | openssl md5` 와 같아야 한다.
+// 원본은 openssl 이 포함하는 마지막 개행을 빼먹어 값이 늘 달랐다.
+func TestRsaFingerprintMatchesOpenssl(t *testing.T) {
+	if _, err := exec.LookPath("openssl"); err != nil {
+		t.Skip("openssl 이 없어 건너뜀")
+	}
+
+	dir := t.TempDir()
+	certPath := filepath.Join(dir, "c.pem")
+	keyPath := filepath.Join(dir, "k.pem")
+
+	gen := exec.Command("openssl", "req", "-x509", "-newkey", "rsa:2048",
+		"-keyout", keyPath, "-out", certPath, "-days", "2", "-nodes", "-subj", "/CN=test.local")
+	if out, err := gen.CombinedOutput(); err != nil {
+		t.Skipf("테스트 인증서 생성 실패: %v\n%s", err, out)
+	}
+
+	opensslMd5 := func(kind, path string) string {
+		t.Helper()
+		out, err := exec.Command("openssl", kind, "-noout", "-modulus", "-in", path).Output()
+		if err != nil {
+			t.Fatalf("openssl %s -modulus 실패: %v", kind, err)
+		}
+		return md5Hex(out) // 개행 포함 그대로
+	}
+
+	certPem, err := GetPemType(certPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	certMd5, err := GetMd5FromCertificate(certPem)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := opensslMd5("x509", certPath); certMd5.Certificate != want {
+		t.Errorf("인증서 해시가 openssl 과 다르다\n  gossl   = %s\n  openssl = %s", certMd5.Certificate, want)
+	}
+
+	keyPem, err := GetPemType(keyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyMd5, err := GetMd5FromRsaPrivateKey(keyPem)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := opensslMd5("rsa", keyPath); keyMd5.RsaPrivateKey != want {
+		t.Errorf("키 해시가 openssl 과 다르다\n  gossl   = %s\n  openssl = %s", keyMd5.RsaPrivateKey, want)
+	}
 }

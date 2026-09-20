@@ -88,15 +88,16 @@ func md5Hex(b []byte) string {
 func publicKeyFingerprint(pub crypto.PublicKey) (string, error) {
 	switch k := pub.(type) {
 	case *rsa.PublicKey:
+		// openssl 은 "Modulus=<HEX>" 뒤의 개행까지 포함해 해시한다.
 		modulus := strings.ToUpper(hex.EncodeToString(k.N.Bytes()))
-		return md5Hex([]byte(fmt.Sprintf("Modulus=%s", modulus))), nil
+		return md5Hex([]byte(fmt.Sprintf("Modulus=%s\n", modulus))), nil
 	case *dsa.PublicKey:
 		// DSA 는 MarshalPKIXPublicKey 가 지원하지 않는다.
 		if k.Y == nil {
 			return "", fmt.Errorf("dsa public key has no Y value")
 		}
 		modulus := strings.ToUpper(hex.EncodeToString(k.Y.Bytes()))
-		return md5Hex([]byte(fmt.Sprintf("Modulus=%s", modulus))), nil
+		return md5Hex([]byte(fmt.Sprintf("Modulus=%s\n", modulus))), nil
 	default:
 		der, err := x509.MarshalPKIXPublicKey(pub)
 		if err != nil {
