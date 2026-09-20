@@ -39,6 +39,10 @@ var (
 				panicRed(err)
 			}
 
+			if len(ips) == 0 {
+				panicRed(fmt.Errorf("no IPv4 address found for %s, this domain may be IPv6 only", domain))
+			}
+
 			for _, ip := range ips {
 				err = internal.GetCertificateInfo(ip, domain)
 				if err != nil {

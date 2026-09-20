@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
 )
@@ -28,6 +30,9 @@ var (
 			ips, err := internal.GetRecordIPv4(domain)
 			if err != nil {
 				panicRed(err)
+			}
+			if len(ips) == 0 {
+				panicRed(fmt.Errorf("no IPv4 address found for %s, this domain may be IPv6 only", domain))
 			}
 
 			err = internal.GetCertificate(domain, ips[0])
