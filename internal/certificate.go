@@ -290,8 +290,9 @@ func DistinguishCertificateWithConnection(cert *x509.Certificate) string {
 		if cert.Subject.String() == cert.Issuer.String() {
 			return "Root Certificate"
 		} else {
+			// 원격 목록 조회가 실패하면 루트로 단정하지 않고 중간 인증서로 둔다.
 			result, err := caRootCondition(cert.Subject.CommonName)
-			if result && err != nil {
+			if err == nil && result {
 				return "Root Certificate"
 			}
 			return "Intermediate Certificate"
@@ -315,7 +316,7 @@ func DistinguishCertificate(p *Pem, _ *CertFile, pemBlockCount int) (string, err
 		} else {
 
 			result, err := caRootCondition(cert.Subject.CommonName)
-			if result && err != nil {
+			if err == nil && result {
 				return rootFormat, nil
 			}
 
