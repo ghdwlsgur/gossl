@@ -12,6 +12,10 @@
 *.pfx
 *.jks
 
+# 단, 생성된 루트 인증서 번들은 저장소에 포함한다.
+# tools/genroots 가 만들고 go:embed 로 바이너리에 실린다.
+!config/roots.pem
+
 # 빌드 산출물
 /dist/
 /gossl
