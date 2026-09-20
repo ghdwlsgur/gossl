@@ -345,12 +345,16 @@ func ParsingYaml(yamlObject *RootYaml) error {
 		SetHeader("Referer", "https://ghdwlsgur.github.io/").
 		SetHeader("Content-Type", "application/yaml").
 		Get(rootCertificateDownloadUrl)
+	if err != nil {
+		return fmt.Errorf("failed to download root certificate list: %w", err)
+	}
 
-	if resp.StatusCode() == 200 {
-		err = yaml.Unmarshal(resp.Body(), &yamlObject)
-		if err != nil {
-			return err
-		}
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("failed to download root certificate list: status %d", resp.StatusCode())
+	}
+
+	if err := yaml.Unmarshal(resp.Body(), yamlObject); err != nil {
+		return err
 	}
 
 	return nil
