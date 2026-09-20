@@ -34,12 +34,16 @@ func saveFile(b []*pem.Block, typeName string, blockCount int) error {
 func saveFileAsType(b []*pem.Block, typeName string, blockCount int) error {
 
 	fileName := fmt.Sprintf("gossl_%s_%d.crt", typeName, blockCount)
-	if len(b) > 0 {
+	if blockCount >= 1 && blockCount <= len(b) {
 		newFile, err := createFile(fileName)
 		if err != nil {
 			return err
 		}
 		if err := pem.Encode(newFile, b[blockCount-1]); err != nil {
+			newFile.Close()
+			return err
+		}
+		if err := newFile.Close(); err != nil {
 			return err
 		}
 		fmt.Printf("📄 %s %s\n", color.HiGreenString(fileName), "created successfully")
@@ -85,7 +89,6 @@ var (
 				if pemBlockCount > 1 {
 					name := fmt.Sprintf("%s [in %d Block]", certificateFileName, pemBlockCount)
 					selectList = append(selectList, name)
-					certFile.Name = append(certFile.Name, certificateFileName)
 				}
 			}
 
@@ -189,13 +192,13 @@ var (
 
 			if len(args) < 1 {
 				fmt.Printf("\n%s\n", color.HiWhiteString("Created Files"))
-				if saveFile(leafBlock, "leaf", leafBlockCount); err != nil {
+				if err := saveFile(leafBlock, "leaf", leafBlockCount); err != nil {
 					panicRed(err)
 				}
-				if saveFile(intermediateBlock, "intermediate", intermediateBlockCount); err != nil {
+				if err := saveFile(intermediateBlock, "intermediate", intermediateBlockCount); err != nil {
 					panicRed(err)
 				}
-				if saveFile(rootBlock, "root", rootBlockCount); err != nil {
+				if err := saveFile(rootBlock, "root", rootBlockCount); err != nil {
 					panicRed(err)
 				}
 			}
