@@ -1,7 +1,5 @@
-#!/usr/bin/env bash 
+#!/usr/bin/env bash
 set -e -o pipefail
-
-
 
 trap '[ "$?" -eq 0 ] || echo "Error Line:<$LINENO> Error Function:<${FUNCNAME}>"' EXIT
 cd "$(dirname "$0")" && cd ..
@@ -9,39 +7,16 @@ CURRENT=$(pwd)
 
 function test
 {
-    go test -v $(go list ./... | grep -v vendor) --count 1 -race -coverprofile="$CURRENT"/coverage.txt -covermode=atomic
+    go test -v ./... --count 1 -race -coverprofile="$CURRENT"/coverage.txt -covermode=atomic
 }
 
-function test_with_circleci
-{
-    export CIRCLECI="true"
-    go test -v $(go list ./... | grep -v vendor) --count 1 -race -coverprofile="$CURRENT"/coverage.txt -covermode=atomic
-}
-
-function release
-{    
-  go mod vendor
-  rm -rf "$CURRENT"/dist "$CURRENT"/gopath  
-  export GOPATH="$CURRENT"/gopath
-
-  tag=$1
-  if [ -z "$tag" ]; then
-    echo "not found tag name"
-    exit 1
-  fi
- 
-  git tag -a "$tag" -m "Add $tag"
-  git push origin "$tag"
-
-  goreleaser release --clean
-}
-
+# 릴리스는 태그를 밀면 .github/workflows/release.yml 이 처리한다.
+#   git tag -a v1.2.3 -m "..." && git push origin v1.2.3
+# 아래는 발행 없이 산출물만 만들어 확인할 때 쓴다.
 function release_test
 {
-  sudo rm -rf "$CURRENT"/dist "$CURRENT"/gopath  
-  export GOPATH="$CURRENT"/gopath
-
-  goreleaser release --snapshot --clean
+  rm -rf "$CURRENT"/dist
+  goreleaser release --snapshot --clean --skip=publish
 }
 
 CMD=$1

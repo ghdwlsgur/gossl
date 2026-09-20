@@ -6,16 +6,19 @@
 <img width="50%" alt="govpn-logo" src="https://user-images.githubusercontent.com/77400522/202766468-72b9c4ac-2191-4c8d-945e-97d96a75c3aa.png">
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/ghdwlsgur/gossl?color=success&label=version&sort=semver)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ghdwlsgur/gossl)](https://goreportcard.com/report/github.com/ghdwlsgur/gossl)
+[![ci](https://github.com/ghdwlsgur/gossl/actions/workflows/ci.yml/badge.svg)](https://github.com/ghdwlsgur/gossl/actions/workflows/ci.yml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/77e2268c53a34ac7ae629a09e63c4419)](https://www.codacy.com/gh/ghdwlsgur/gossl/dashboard?utm_source=github.com&utm_medium=referral&utm_content=ghdwlsgur/gossl&utm_campaign=Badge_Grade)
 [![Maintainability](https://api.codeclimate.com/v1/badges/1d8e562559047191efd8/maintainability)](https://codeclimate.com/github/ghdwlsgur/gossl/maintainability)
-[![circle ci](https://circleci.com/gh/ghdwlsgur/gossl.svg?style=svg)](https://circleci.com/gh/ghdwlsgur/gossl)
 
 </div>
 
 # Overview
 
 This is an interactive CLI tool that helps to check and process the information of certificate and private key files, making it easy to apply the certificate to a web server.
+
+Certificates may use RSA, ECDSA or Ed25519 keys. Private keys are read in PKCS#1
+(`RSA PRIVATE KEY`), PKCS#8 (`PRIVATE KEY`) and SEC1 (`EC PRIVATE KEY`) form, plus
+legacy RFC 1423 encrypted PEM.
 
 [Korean Document](https://ghdwlsgur.github.io/docs/OpenSource/gossl)
 
@@ -68,13 +71,19 @@ gossl echo
 
 When you select each individual file of domain certificate, chain certificate, and root certificate, it combines them into one certificate file in the order of domain certificate, chain certificate, and root certificate.
 
+The output file name defaults to `gossl_merge_output.pem`. Selecting a private key
+is rejected unless `-f` is given, in which case the key is appended after the
+certificates.
+
 ```bash
-gossl merge -n [fileName]
+gossl merge                     # gossl_merge_output.pem
+gossl merge -n [fileName]       # [fileName].pem
+gossl merge -f                  # allow a private key in the output
 ```
 
 ### `split`
 
-Shows the order in which the domain certificate, chain certificate, and root certificate are composed into a single certificate file, or splits the file into separate files named according to the type of certificate, such as `gossl_internetiate_1.crt`, `gossl_leaf_1.crt`, and `gossl_root_1.crt`, so that the type of each certificate can be identified.
+Shows the order in which the domain certificate, chain certificate, and root certificate are composed into a single certificate file, or splits the file into separate files named according to the type of certificate, such as `gossl_intermediate_1.crt`, `gossl_leaf_1.crt`, and `gossl_root_1.crt`, so that the type of each certificate can be identified.
 
 ```bash
 gossl split # make file
@@ -83,7 +92,7 @@ gossl split show # not make file
 
 ### `unlock`
 
-When a private key is password-protected, it prompts for the password and replaces the original key with an unencrypted one.
+When a private key is password-protected, it prompts for the password and replaces the original key with an unencrypted one. The replacement is atomic: the decrypted key is written to a temporary file in the same directory and then renamed over the original, so a failure never leaves you without the key.
 
 ```bash
 gossl unlock
@@ -134,4 +143,4 @@ gossl download
 
 # License
 
-gossl is licensed under the [MIT](https://github.com/ghdwlsgur/gossl/blob/master/LICENSE)
+gossl is licensed under the [MIT](https://github.com/ghdwlsgur/gossl/blob/main/LICENSE)
