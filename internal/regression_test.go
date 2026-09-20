@@ -284,3 +284,16 @@ func TestHostNames(t *testing.T) {
 		t.Error("SAN 이 없는 인증서에서 빈 문자열을 반환했다")
 	}
 }
+
+// PKCS#8 이 RSA 가 아니면 타입 단언에서 패닉했다.
+func TestPrivateToRsaPrivate_NonRsaReturnsError(t *testing.T) {
+	k, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	der, err := x509.MarshalPKCS8PrivateKey(k)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(t.TempDir(), "out.key")
+	if err := PrivateToRsaPrivate(out, &pem.Block{Type: "PRIVATE KEY", Bytes: der}); err == nil {
+		t.Error("EC 키를 RSA 로 변환하려 했는데 오류를 반환하지 않았다")
+	}
+}

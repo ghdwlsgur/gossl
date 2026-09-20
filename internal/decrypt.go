@@ -193,9 +193,18 @@ func GetMd5FromRsaPrivateKey(p *Pem) (*Md5, error) {
 }
 
 func PrivateToRsaPrivate(newFileName string, pemBlock *pem.Block) error {
-	priv, err := x509.ParsePKCS8PrivateKey(pemBlock.Bytes)
+	if pemBlock == nil {
+		return fmt.Errorf("no PEM block found in private key file")
+	}
+
+	parsed, err := x509.ParsePKCS8PrivateKey(pemBlock.Bytes)
 	if err != nil {
 		return err
+	}
+
+	priv, ok := parsed.(*rsa.PrivateKey)
+	if !ok {
+		return fmt.Errorf("this key is %T, only RSA keys can be converted to RSA PRIVATE KEY", parsed)
 	}
 
 	newFile, err := os.Create(newFileName)
@@ -204,11 +213,14 @@ func PrivateToRsaPrivate(newFileName string, pemBlock *pem.Block) error {
 	}
 	defer newFile.Close()
 
-	pem.Encode(newFile, &pem.Block{
+	if err := pem.Encode(newFile, &pem.Block{
 		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(priv.(*rsa.PrivateKey)),
-	})
-	return nil
+		Bytes: x509.MarshalPKCS1PrivateKey(priv),
+	}); err != nil {
+		return err
+	}
+
+	return newFile.Close()
 }
 
 func CrtToCertificate(FileName string, bytes []byte) error {
