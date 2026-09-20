@@ -130,6 +130,33 @@ func GetMd5FromCertificate(p *Pem) (*Md5, error) {
 	}, nil
 }
 
+// parsePrivateKey 는 PKCS#1, PKCS#8, SEC1(EC) 순으로 시도한다.
+func parsePrivateKey(der []byte) (crypto.PrivateKey, error) {
+	if key, err := x509.ParsePKCS1PrivateKey(der); err == nil {
+		return key, nil
+	}
+	if key, err := x509.ParsePKCS8PrivateKey(der); err == nil {
+		return key, nil
+	}
+	if key, err := x509.ParseECPrivateKey(der); err == nil {
+		return key, nil
+	}
+	return nil, fmt.Errorf("failed to parse private key as PKCS#1, PKCS#8 or SEC1")
+}
+
+func privateKeyFingerprint(der []byte) (string, error) {
+	key, err := parsePrivateKey(der)
+	if err != nil {
+		return "", err
+	}
+
+	signer, ok := key.(crypto.Signer)
+	if !ok {
+		return "", fmt.Errorf("unsupported private key type %T", key)
+	}
+	return publicKeyFingerprint(signer.Public())
+}
+
 func GetMd5FromRsaPrivateKey(p *Pem) (*Md5, error) {
 
 	if p == nil || p.getBlock() == nil {
@@ -153,12 +180,7 @@ func GetMd5FromRsaPrivateKey(p *Pem) (*Md5, error) {
 		der = decrypted
 	}
 
-	priv, err := x509.ParsePKCS1PrivateKey(der)
-	if err != nil {
-		return nil, err
-	}
-
-	fingerprint, err := publicKeyFingerprint(priv.Public())
+	fingerprint, err := privateKeyFingerprint(der)
 	if err != nil {
 		return nil, err
 	}

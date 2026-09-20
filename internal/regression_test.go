@@ -137,3 +137,67 @@ func TestCertificateAndKeyFingerprintsMatch_RSA(t *testing.T) {
 		t.Errorf("RSA 쌍의 해시가 다르다\n  cert = %s\n  key  = %s", certMd5.Certificate, keyMd5.RsaPrivateKey)
 	}
 }
+
+// ParsePKCS1PrivateKey 만 써서 PKCS#8 과 SEC1 키를 읽지 못했다.
+func TestPrivateKeyFormats(t *testing.T) {
+	t.Run("PKCS8 RSA", func(t *testing.T) {
+		k, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			t.Fatal(err)
+		}
+		der, err := x509.MarshalPKCS8PrivateKey(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+		certMd5, err := GetMd5FromCertificate(&Pem{Block: &pem.Block{Bytes: newCert(t, false, []string{"p8.com"}, "p8", &k.PublicKey, k)}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		keyBlock := &pem.Block{Type: "PRIVATE KEY", Bytes: der}
+		keyMd5, err := GetMd5FromRsaPrivateKey(&Pem{Type: keyBlock.Type, Block: keyBlock})
+		if err != nil {
+			t.Fatalf("PKCS#8 RSA 키를 읽지 못했다: %v", err)
+		}
+		if certMd5.Certificate != keyMd5.RsaPrivateKey {
+			t.Errorf("PKCS#8 RSA 쌍의 해시가 다르다\n  cert = %s\n  key  = %s", certMd5.Certificate, keyMd5.RsaPrivateKey)
+		}
+	})
+
+	t.Run("SEC1 ECDSA", func(t *testing.T) {
+		k, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		der, err := x509.MarshalECPrivateKey(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+		certMd5, err := GetMd5FromCertificate(&Pem{Block: &pem.Block{Bytes: newCert(t, false, []string{"e.com"}, "e", &k.PublicKey, k)}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		keyBlock := &pem.Block{Type: "EC PRIVATE KEY", Bytes: der}
+		keyMd5, err := GetMd5FromRsaPrivateKey(&Pem{Type: keyBlock.Type, Block: keyBlock})
+		if err != nil {
+			t.Fatalf("EC 키를 읽지 못했다: %v", err)
+		}
+		if certMd5.Certificate != keyMd5.RsaPrivateKey {
+			t.Errorf("ECDSA 쌍의 해시가 다르다\n  cert = %s\n  key  = %s", certMd5.Certificate, keyMd5.RsaPrivateKey)
+		}
+	})
+
+	t.Run("무관한 쌍은 달라야 한다", func(t *testing.T) {
+		k1, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		k2, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		der, _ := x509.MarshalECPrivateKey(k2)
+		certMd5, err := GetMd5FromCertificate(&Pem{Block: &pem.Block{Bytes: newCert(t, false, []string{"x.com"}, "x", &k1.PublicKey, k1)}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		keyBlock := &pem.Block{Type: "EC PRIVATE KEY", Bytes: der}
+		keyMd5, err := GetMd5FromRsaPrivateKey(&Pem{Type: keyBlock.Type, Block: keyBlock})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if certMd5.Certificate == keyMd5.RsaPrivateKey {
+			t.Error("무관한 인증서와 키가 일치로 판정됐다")
+		}
+	})
+}
