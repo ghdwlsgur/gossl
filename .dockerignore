@@ -1,0 +1,19 @@
+.git
+.github
+.gitignore
+.goreleaser.yaml
+dist
+scripts
+README.md
+LICENSE
+
+# 인증서는 이미지에 들어가면 안 된다
+*.pem
+*.crt
+*.key
+*.ca
+*.csr
+*.cer
+*.der
+*.p12
+*.pfx

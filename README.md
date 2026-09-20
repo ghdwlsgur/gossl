@@ -7,8 +7,6 @@
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/ghdwlsgur/gossl?color=success&label=version&sort=semver)
 [![ci](https://github.com/ghdwlsgur/gossl/actions/workflows/ci.yml/badge.svg)](https://github.com/ghdwlsgur/gossl/actions/workflows/ci.yml)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/77e2268c53a34ac7ae629a09e63c4419)](https://www.codacy.com/gh/ghdwlsgur/gossl/dashboard?utm_source=github.com&utm_medium=referral&utm_content=ghdwlsgur/gossl&utm_campaign=Badge_Grade)
-[![Maintainability](https://api.codeclimate.com/v1/badges/1d8e562559047191efd8/maintainability)](https://codeclimate.com/github/ghdwlsgur/gossl/maintainability)
 
 </div>
 
@@ -49,6 +47,17 @@ brew upgrade gossl
 ```
 
 ### [Download](https://github.com/ghdwlsgur/gossl/releases)
+
+### docker
+
+gossl reads certificate files from the current directory, so mount the directory
+you want to work in at `/work`.
+
+```bash
+docker build -t gossl .
+docker run --rm -it -v "$PWD:/work" gossl echo
+docker run --rm gossl check example.com
+```
 
 # How to use
 
