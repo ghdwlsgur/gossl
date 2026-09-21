@@ -59,12 +59,17 @@ homebrew_casks:
     commit_author:
       name: ghdwlsgur
       email: vjinhyeokv@gmail.com
-    hooks:
-      post:
-        # 서명도 공증도 하지 않은 바이너리라 macOS 가 격리 속성을 붙인다.
-        # 떼지 않으면 Gatekeeper 가 실행을 막는다. Linux 에는 xattr 이
-        # 없으므로 OS.mac? 으로 감싼다.
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/gossl"]
-          end
+    # hooks 를 쓰면 GoReleaser 가 Homebrew 에서 폐기된 postflight 스탠자를
+    # 내보내 설치할 때마다 경고가 뜬다 (goreleaser#6870, 미해결). 같은 일을
+    # 하는 postflight_steps 를 직접 써서 우회한다.
+    #
+    # 서명도 공증도 하지 않은 바이너리라 macOS 가 격리 속성을 붙인다. 떼지
+    # 않으면 Gatekeeper 가 실행을 막는다. Linux 에는 xattr 이 없으므로
+    # on_macos 로 감싼다. {{staged_path}} 는 Homebrew 가 실행 시점에
+    # 치환하는 토큰이다 (install_steps.rb 의 expand_template_tokens).
+    custom_block: |
+      postflight_steps do
+        on_macos do
+          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ "{{staged_path}}" }}/gossl"]
+        end
+      end
