@@ -51,7 +51,7 @@ homebrew_casks:
     binaries:
       - gossl
     homepage: "https://github.com/ghdwlsgur/gossl"
-    description: "interactive CLI tool that helps to check and process the information of certificate and private key files, making it easy to apply the certificate to a web server"
+    description: "Split, merge and inspect TLS certificate files, interactively or in a pipeline"
     repository:
       owner: ghdwlsgur
       name: homebrew-gossl

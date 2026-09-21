@@ -119,11 +119,15 @@ GOSSL_PASSWORD=... gossl unlock server.key        # decrypt without a terminal
 
 ```bash
 # [install]
+brew trust --cask ghdwlsgur/gossl/gossl
 brew install --cask ghdwlsgur/gossl/gossl
 
 # [upgrade]
 brew upgrade --cask gossl
 ```
+
+Homebrew asks you to trust anything from a tap it does not maintain, formulae
+and casks alike, so `brew trust` comes first.
 
 gossl ships as a Homebrew cask, not a formula, because a formula is meant to
 build from source and gossl ships prebuilt binaries. macOS and Linux, Intel and
