@@ -162,7 +162,7 @@ func TestRunMerge(t *testing.T) {
 
 	t.Run("두 개 미만 선택", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{multiSelects: [][]string{{"leaf.pem"}}})()
-		if err := runMerge("", false); err == nil {
+		if err := runMerge(nil, "", false); err == nil {
 			t.Error("하나만 골랐는데 오류를 반환하지 않았다")
 		}
 	})
@@ -170,7 +170,7 @@ func TestRunMerge(t *testing.T) {
 	t.Run("네 개 초과 선택", func(t *testing.T) {
 		five := []string{"a", "b", "c", "d", "e"}
 		defer internal.SetPrompter(&fakePrompter{multiSelects: [][]string{five}})()
-		if err := runMerge("", false); err == nil {
+		if err := runMerge(nil, "", false); err == nil {
 			t.Error("다섯 개를 골랐는데 오류를 반환하지 않았다")
 		}
 	})
@@ -179,7 +179,7 @@ func TestRunMerge(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{
 			multiSelects: [][]string{{"leaf.pem", "inter.pem", "root.pem"}},
 		})()
-		if err := runMerge("chain", false); err != nil {
+		if err := runMerge(nil, "chain", false); err != nil {
 			t.Fatal(err)
 		}
 		data, err := os.ReadFile(filepath.Join(dir, "chain.pem"))
@@ -195,7 +195,7 @@ func TestRunMerge(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{
 			multiSelects: [][]string{{"leaf.pem", "inter.pem"}},
 		})()
-		if err := runMerge("", false); err != nil {
+		if err := runMerge(nil, "", false); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := os.Stat(filepath.Join(dir, "gossl_merge_output.pem")); err != nil {

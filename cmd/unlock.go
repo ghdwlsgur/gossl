@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ghdwlsgur/gossl/internal"
 	"github.com/spf13/cobra"
@@ -46,31 +47,65 @@ func writeUnlockedKey(fileName string, der []byte) error {
 }
 
 var (
+	unlockPasswordFile string
+
 	unlockCommand = &cobra.Command{
-		Use:   "unlock",
+		Use:   "unlock [file]",
 		Short: "Unlock RSA PRIVATE KEY FILE",
-		Long:  "Unlock RSA PRIVATE KEY FILE",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.NoArgs(cmd, args); err != nil {
-				return panicRed(err)
+		Long: `Decrypt a password protected RSA private key in place.
+
+Pass a file and a password source to skip both prompts:
+  gossl unlock server.key --password-file secret.txt
+  GOSSL_PASSWORD=... gossl unlock server.key
+
+There is deliberately no --password flag. A password on the command line
+is visible to every other process through ps.
+
+Without a file it lists the keys in the current directory and asks.`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			var file string
+			if len(args) == 1 {
+				file = args[0]
 			}
-			return runUnlock()
+			return runUnlock(file, unlockPasswordFile)
 		},
 	}
 )
 
 func init() {
+	unlockCommand.Flags().StringVar(&unlockPasswordFile, "password-file", "",
+		"[optional] read the password from this file instead of asking")
+
 	rootCmd.AddCommand(unlockCommand)
 }
 
-// runUnlock 은 암호가 걸린 RSA 개인키를 골라 암호를 풀어 저장한다.
-func runUnlock() error {
-	certFile, err := internal.DirGrepX509()
-	if err != nil {
-		return panicRed(err)
+// resolvePassword 는 비대화형 입력원을 먼저 보고, 없으면 물어본다.
+// 터미널이 없는데 입력원도 없으면 멈춰 있지 말고 실패한다.
+func resolvePassword(passwordFile string) (string, error) {
+	if passwordFile != "" {
+		data, err := os.ReadFile(passwordFile)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimRight(string(data), "\r\n"), nil
 	}
 
-	fileName, err := internal.AskSelect("Select RSA PRIVATE KEY File", certFile.Name)
+	if password, ok := os.LookupEnv("GOSSL_PASSWORD"); ok {
+		return password, nil
+	}
+
+	if !stdinIsTerminal() {
+		return "", fmt.Errorf("no terminal to ask on, pass --password-file or set GOSSL_PASSWORD")
+	}
+
+	return internal.AskInput("What is your password", 1)
+}
+
+// runUnlock 은 암호가 걸린 RSA 개인키의 암호를 풀어 저장한다.
+// file 이 비어 있으면 현재 디렉토리에서 고르게 한다.
+func runUnlock(file, passwordFile string) error {
+	_, fileName, err := resolveCertFile("Select RSA PRIVATE KEY File", file)
 	if err != nil {
 		return panicRed(err)
 	}
@@ -88,7 +123,7 @@ func runUnlock() error {
 		return panicRed(fmt.Errorf("this rsa private key file is not locked"))
 	}
 
-	password, err := internal.AskInput("What is your password", 1)
+	password, err := resolvePassword(passwordFile)
 	if err != nil {
 		return panicRed(err)
 	}

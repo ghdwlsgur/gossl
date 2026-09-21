@@ -88,16 +88,31 @@ func writeMerged(path string, groups ...[]*pem.Block) error {
 	return file.Close()
 }
 
-// runMerge 는 고른 인증서들을 신뢰 체인 순서로 하나의 파일에 합친다.
-func runMerge(requestedName string, allowPrivateKey bool) error {
-	newFile := outputName(requestedName, "gossl_merge_output", ".pem")
+// selectForMerge 는 합칠 파일 목록을 정한다.
+// 인자로 받았으면 프롬프트를 띄우지 않는다.
+func selectForMerge(files []string) ([]string, error) {
+	if len(files) > 0 {
+		for _, name := range files {
+			if err := statCertFile(name); err != nil {
+				return nil, err
+			}
+		}
+		return files, nil
+	}
 
 	certFile, err := internal.DirGrepX509()
 	if err != nil {
-		return panicRed(err)
+		return nil, err
 	}
+	return internal.AskMultiSelect("Select Certificate File", certFile.Name)
+}
 
-	selectList, err := internal.AskMultiSelect("Select Certificate File", certFile.Name)
+// runMerge 는 고른 인증서들을 신뢰 체인 순서로 하나의 파일에 합친다.
+// files 가 비어 있으면 현재 디렉토리에서 고르게 한다.
+func runMerge(files []string, requestedName string, allowPrivateKey bool) error {
+	newFile := outputName(requestedName, "gossl_merge_output", ".pem")
+
+	selectList, err := selectForMerge(files)
 	if err != nil {
 		return panicRed(err)
 	}
@@ -122,11 +137,19 @@ func runMerge(requestedName string, allowPrivateKey bool) error {
 
 var (
 	mergeCommand = &cobra.Command{
-		Use:   "merge",
+		Use:   "merge [file...]",
 		Short: "Combine each certificate file in order of leaf, intermediate, root.",
-		Long:  "Combine each certificate file in order of leaf, intermediate, root.",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return runMerge(viper.GetString("pem-file-name"), viper.GetBool("add-private-key"))
+		Long: `Combine certificate files in order of leaf, intermediate, root.
+
+Pass the files to skip the prompt, which is what you want in a pipeline:
+  gossl merge leaf.pem chain.pem -n bundle
+  gossl merge leaf.pem chain.pem server.key -f
+
+Without files it lists the certificates in the current directory and asks.
+Takes 2 to 4 files either way.`,
+		Args: cobra.MaximumNArgs(4),
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runMerge(args, viper.GetString("pem-file-name"), viper.GetBool("add-private-key"))
 		},
 	}
 )

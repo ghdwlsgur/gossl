@@ -134,19 +134,64 @@ func splittableFiles() ([]string, error) {
 	return list, nil
 }
 
-// runSplit 은 통합 인증서를 종류별로 나눈다.
-// showOnly 면 구성만 보여주고 파일은 만들지 않는다.
-func runSplit(showOnly bool) error {
-	selectList, err := splittableFiles()
-	if err != nil {
-		return panicRed(err)
+// parseSplitArgs 는 split 의 인자를 읽는다.
+// 받는 형태는 넷이다: (없음), show, <file>, show <file>.
+func parseSplitArgs(args []string) (showOnly bool, file string, err error) {
+	format := fmt.Errorf("input format is incorrect. ex) gossl split show, gossl split bundle.pem")
+
+	switch len(args) {
+	case 0:
+		return false, "", nil
+	case 1:
+		if args[0] == "show" {
+			return true, "", nil
+		}
+		return false, args[0], nil
+	case 2:
+		if args[0] != "show" {
+			return false, "", format
+		}
+		return true, args[1], nil
+	default:
+		return false, "", format
+	}
+}
+
+// selectSplittable 은 나눌 파일을 정한다.
+// 인자로 받았으면 블록이 2개 이상인지만 확인하고 프롬프트를 띄우지 않는다.
+func selectSplittable(file string) (string, error) {
+	if file != "" {
+		if err := statCertFile(file); err != nil {
+			return "", err
+		}
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return "", err
+		}
+		if n := internal.CountPemBlock(data); n < 2 {
+			return "", fmt.Errorf("%s has %d pem block, splitting needs at least 2", file, n)
+		}
+		return file, nil
 	}
 
+	selectList, err := splittableFiles()
+	if err != nil {
+		return "", err
+	}
 	selected, err := internal.AskSelect("Select Certificate File", selectList)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(strings.Split(selected, "[")[0]), nil
+}
+
+// runSplit 은 통합 인증서를 종류별로 나눈다.
+// showOnly 면 구성만 보여주고 파일은 만들지 않는다.
+func runSplit(showOnly bool, requested string) error {
+	file, err := selectSplittable(requested)
 	if err != nil {
 		return panicRed(err)
 	}
-	file := strings.TrimSpace(strings.Split(selected, "[")[0])
 
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -182,14 +227,23 @@ func runSplit(showOnly bool) error {
 
 var (
 	splitCommand = &cobra.Command{
-		Use:   "split",
+		Use:   "split [show] [file]",
 		Short: "Split Unified Certificate.",
-		Long:  "Split Unified Certificate.",
+		Long: `Split a unified certificate into leaf, intermediate and root files.
+
+Pass a file to skip the prompt, which is what you want in a pipeline:
+  gossl split bundle.pem        write gossl_leaf_1.crt and friends
+  gossl split show bundle.pem   report the chain without writing anything
+
+Without a file it lists the multi-block certificates in the current
+directory and asks.`,
+		Args: cobra.MaximumNArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
-			if len(args) > 0 && (args[0] != "show" || len(args) > 1) {
-				return panicRed(fmt.Errorf("input format is incorrect. ex) gossl split show"))
+			showOnly, file, err := parseSplitArgs(args)
+			if err != nil {
+				return panicRed(err)
 			}
-			return runSplit(len(args) > 0 && args[0] == "show")
+			return runSplit(showOnly, file)
 		},
 	}
 )

@@ -122,7 +122,7 @@ func TestRunUnlock(t *testing.T) {
 
 	t.Run("잘못된 암호", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{selects: []string{locked}, inputs: []string{"wrong"}})()
-		if err := runUnlock(); err == nil {
+		if err := runUnlock("", ""); err == nil {
 			t.Error("암호가 틀렸는데 오류를 반환하지 않았다")
 		}
 		// 실패해도 원본이 남아 있어야 한다.
@@ -134,7 +134,7 @@ func TestRunUnlock(t *testing.T) {
 
 	t.Run("암호를 풀어 저장한다", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{selects: []string{locked}, inputs: []string{"secret"}})()
-		if err := runUnlock(); err != nil {
+		if err := runUnlock("", ""); err != nil {
 			t.Fatal(err)
 		}
 		data, err := os.ReadFile(filepath.Join(dir, locked))
@@ -156,7 +156,7 @@ func TestRunUnlock(t *testing.T) {
 
 	t.Run("암호가 걸리지 않은 키", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{selects: []string{locked}})()
-		if err := runUnlock(); err == nil {
+		if err := runUnlock("", ""); err == nil {
 			t.Error("이미 풀린 키인데 오류를 반환하지 않았다")
 		}
 	})
@@ -167,7 +167,7 @@ func TestRunUnlock(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer internal.SetPrompter(&fakePrompter{selects: []string{"cert.pem"}})()
-		if err := runUnlock(); err == nil {
+		if err := runUnlock("", ""); err == nil {
 			t.Error("인증서인데 오류를 반환하지 않았다")
 		}
 	})

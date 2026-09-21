@@ -10,13 +10,21 @@ package main
 // -cover 로 빌드하므로 os.Exit 이 진짜로 도는 채 Execute 커버리지도 잡힌다.
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"errors"
+	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 const testVersion = "9.9.9-integration"
@@ -107,7 +115,7 @@ func TestIntegration_AllCommandsRegistered(t *testing.T) {
 	}
 
 	for _, name := range []string{
-		"check", "download", "echo", "merge",
+		"check", "download", "inspect", "merge",
 		"split", "unlock", "unzip", "validate", "zip",
 	} {
 		if !strings.Contains(got.stdout, name) {
@@ -149,7 +157,8 @@ func TestIntegration_ErrorStreamAndExitCode(t *testing.T) {
 		{"인자 없는 check", []string{"check"}},
 		{"인자 없는 validate", []string{"validate"}},
 		{"알 수 없는 명령", []string{"nosuchcommand"}},
-		{"split 인자 형식 오류", []string{"split", "show", "extra"}},
+		{"split 인자 형식 오류", []string{"split", "notshow", "extra.pem"}},
+		{"split 인자 초과", []string{"split", "show", "a", "b"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := runBinary(t, t.TempDir(), tc.args...)
@@ -167,13 +176,138 @@ func TestIntegration_ErrorStreamAndExitCode(t *testing.T) {
 	}
 }
 
+// echo 는 inspect 로 이름이 바뀌었지만 별칭으로 계속 받는다.
+// 쓰던 사람의 스크립트가 깨지면 안 된다.
+func TestIntegration_EchoAliasStillWorks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("실행 파일 빌드가 필요해 건너뜀")
+	}
+
+	got := runBinary(t, t.TempDir(), "echo", "--help")
+	if got.code != 0 {
+		t.Fatalf("종료 코드 = %d, stderr=%s", got.code, got.stderr)
+	}
+	if !strings.Contains(got.stdout, "inspect, echo") {
+		t.Errorf("별칭이 표시되지 않는다:\n%s", got.stdout)
+	}
+}
+
+// 파일을 인자로 주면 프롬프트 없이 끝나야 한다.
+// 실행 파일의 stdin 은 /dev/null 이므로, 프롬프트를 타면 반드시 실패한다.
+// 파이프라인에서 쓸 수 있다는 주장의 실제 증거가 이것이다.
+func TestIntegration_NonInteractive(t *testing.T) {
+	if testing.Short() {
+		t.Skip("실행 파일 빌드가 필요해 건너뜀")
+	}
+
+	dir := t.TempDir()
+	root, leaf := testChain(t)
+	write := func(name string, ders ...[]byte) {
+		t.Helper()
+		var out []byte
+		for _, d := range ders {
+			out = append(out, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: d})...)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), out, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("bundle.pem", leaf, root)
+	write("leaf.pem", leaf)
+	write("root.pem", root)
+
+	t.Run("inspect", func(t *testing.T) {
+		got := runBinary(t, dir, "inspect", "leaf.pem")
+		if got.code != 0 {
+			t.Fatalf("종료 코드 = %d, stderr=%s", got.code, got.stderr)
+		}
+	})
+
+	t.Run("split show", func(t *testing.T) {
+		got := runBinary(t, dir, "split", "show", "bundle.pem")
+		if got.code != 0 {
+			t.Fatalf("종료 코드 = %d, stderr=%s", got.code, got.stderr)
+		}
+		if _, err := os.Stat(filepath.Join(dir, "gossl_leaf_1.crt")); err == nil {
+			t.Error("show 인데 파일이 생성됐다")
+		}
+	})
+
+	t.Run("split", func(t *testing.T) {
+		got := runBinary(t, dir, "split", "bundle.pem")
+		if got.code != 0 {
+			t.Fatalf("종료 코드 = %d, stderr=%s", got.code, got.stderr)
+		}
+		if _, err := os.Stat(filepath.Join(dir, "gossl_leaf_1.crt")); err != nil {
+			t.Error("나뉜 파일이 없다")
+		}
+	})
+
+	t.Run("merge", func(t *testing.T) {
+		got := runBinary(t, dir, "merge", "leaf.pem", "root.pem", "-n", "merged")
+		if got.code != 0 {
+			t.Fatalf("종료 코드 = %d, stderr=%s", got.code, got.stderr)
+		}
+		if _, err := os.Stat(filepath.Join(dir, "merged.pem")); err != nil {
+			t.Error("합쳐진 파일이 없다")
+		}
+	})
+
+	// 인자를 주지 않으면 프롬프트를 타므로, 터미널이 없는 지금은 실패해야 한다.
+	// 멈춰 있지 않고 끝나는 것이 요점이다.
+	t.Run("인자가 없으면 멈추지 않고 실패한다", func(t *testing.T) {
+		got := runBinary(t, dir, "split")
+		if got.code == 0 {
+			t.Error("터미널이 없는데 성공했다")
+		}
+	})
+}
+
+// testChain 은 self-signed root 와 그것이 서명한 leaf 를 만든다.
+func testChain(t *testing.T) (root, leaf []byte) {
+	t.Helper()
+
+	rootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootTpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "Integration Root"},
+		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(24 * time.Hour),
+		IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign,
+	}
+	root, err = x509.CreateCertificate(rand.Reader, rootTpl, rootTpl, &rootKey.PublicKey, rootKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootCert, err := x509.ParseCertificate(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	leafTpl := &x509.Certificate{
+		SerialNumber: big.NewInt(2), Subject: pkix.Name{CommonName: "leaf.integration"},
+		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(24 * time.Hour),
+		DNSNames: []string{"leaf.integration"},
+	}
+	leaf, err = x509.CreateCertificate(rand.Reader, leafTpl, rootCert, &leafKey.PublicKey, rootKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return root, leaf
+}
+
 // 대상 파일이 없는 디렉토리에서는 안내 메시지와 함께 실패한다.
 func TestIntegration_NoCertificateFiles(t *testing.T) {
 	if testing.Short() {
 		t.Skip("실행 파일 빌드가 필요해 건너뜀")
 	}
 
-	got := runBinary(t, t.TempDir(), "echo")
+	got := runBinary(t, t.TempDir(), "inspect")
 	if got.code != 1 {
 		t.Errorf("종료 코드 = %d, 기대 1", got.code)
 	}

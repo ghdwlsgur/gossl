@@ -162,7 +162,7 @@ func TestRunEcho(t *testing.T) {
 	chdir(t, dir)
 
 	t.Run("대상 파일이 없다", func(t *testing.T) {
-		if err := runEcho(); err == nil {
+		if err := runInspect("", false); err == nil {
 			t.Error("대상 파일이 없는데 오류를 반환하지 않았다")
 		}
 	})
@@ -176,14 +176,14 @@ func TestRunEcho(t *testing.T) {
 
 	t.Run("인증서 정보를 보여준다", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{selects: []string{"leaf.pem"}})()
-		if err := runEcho(); err != nil {
-			t.Fatalf("runEcho: %v", err)
+		if err := runInspect("", false); err != nil {
+			t.Fatalf("runInspect: %v", err)
 		}
 	})
 
 	t.Run("선택 취소", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{err: errTest})()
-		if err := runEcho(); err == nil {
+		if err := runInspect("", false); err == nil {
 			t.Error("취소했는데 오류를 반환하지 않았다")
 		}
 	})
@@ -194,7 +194,7 @@ func TestRunEcho(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer internal.SetPrompter(&fakePrompter{selects: []string{"pub.pem"}})()
-		if err := runEcho(); err == nil {
+		if err := runInspect("", false); err == nil {
 			t.Error("지원하지 않는 타입인데 오류를 반환하지 않았다")
 		}
 	})

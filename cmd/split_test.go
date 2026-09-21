@@ -209,7 +209,7 @@ func TestRunSplit(t *testing.T) {
 
 	t.Run("show 는 파일을 만들지 않는다", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{selects: []string{"bundle.pem [in 3 Block]"}})()
-		if err := runSplit(true); err != nil {
+		if err := runSplit(true, ""); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := os.Stat(filepath.Join(dir, "gossl_leaf_1.crt")); err == nil {
@@ -219,7 +219,7 @@ func TestRunSplit(t *testing.T) {
 
 	t.Run("종류별로 파일을 만든다", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{selects: []string{"bundle.pem [in 3 Block]"}})()
-		if err := runSplit(false); err != nil {
+		if err := runSplit(false, ""); err != nil {
 			t.Fatal(err)
 		}
 		for _, n := range []string{"gossl_leaf_1.crt", "gossl_intermediate_1.crt", "gossl_root_1.crt"} {
@@ -231,7 +231,7 @@ func TestRunSplit(t *testing.T) {
 
 	t.Run("선택 취소", func(t *testing.T) {
 		defer internal.SetPrompter(&fakePrompter{err: errTest})()
-		if err := runSplit(false); err == nil {
+		if err := runSplit(false, ""); err == nil {
 			t.Error("취소했는데 오류를 반환하지 않았다")
 		}
 	})
