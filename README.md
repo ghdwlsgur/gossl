@@ -119,12 +119,16 @@ GOSSL_PASSWORD=... gossl unlock server.key        # decrypt without a terminal
 
 ```bash
 # [install]
-brew tap ghdwlsgur/gossl
-brew install gossl
+brew install --cask ghdwlsgur/gossl/gossl
 
 # [upgrade]
-brew upgrade gossl
+brew upgrade --cask gossl
 ```
+
+gossl ships as a Homebrew cask, not a formula, because a formula is meant to
+build from source and gossl ships prebuilt binaries. macOS and Linux, Intel and
+ARM are all covered. If you installed the old formula, `brew upgrade` moves you
+across on its own.
 
 ### [Download](https://github.com/ghdwlsgur/gossl/releases)
 

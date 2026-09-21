@@ -43,8 +43,13 @@ release:
   github:
     owner: ghdwlsgur
     name: gossl
-brews:
+# formula 가 아니라 cask 로 배포한다. formula 는 원래 소스에서 빌드하는
+# 패키지이고, 미리 컴파일한 바이너리를 내려받아 설치하는 것은 cask 의 몫이다.
+# GoReleaser 2.10 에서 brews 가 폐기 예고되고 2.16 에서 하드 폐기됐다.
+homebrew_casks:
   - name: gossl
+    binaries:
+      - gossl
     homepage: "https://github.com/ghdwlsgur/gossl"
     description: "interactive CLI tool that helps to check and process the information of certificate and private key files, making it easy to apply the certificate to a web server"
     repository:
@@ -54,3 +59,12 @@ brews:
     commit_author:
       name: ghdwlsgur
       email: vjinhyeokv@gmail.com
+    hooks:
+      post:
+        # 서명도 공증도 하지 않은 바이너리라 macOS 가 격리 속성을 붙인다.
+        # 떼지 않으면 Gatekeeper 가 실행을 막는다. Linux 에는 xattr 이
+        # 없으므로 OS.mac? 으로 감싼다.
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/gossl"]
+          end
