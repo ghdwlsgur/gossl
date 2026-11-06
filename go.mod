@@ -10,7 +10,7 @@ require (
 	github.com/hairyhenderson/go-which v0.2.3
 	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/spf13/viper v1.21.0
 )
 
